@@ -11,9 +11,9 @@ You must necessarily specify some variables on the top of the script:
 <b>ROTATION:</b> How many old copies you want to hold.
 
 Example:
-DEST=/mnt/nfs/zabbix
-TMP=/var/tmp/zbx_backup
-ROTATION=10
+DEST=/mnt/nfs/zabbix  
+TMP=/var/tmp/zbx_backup  
+ROTATION=10  
 
 For database backup v0.4 expects what you have innobackupex utility installed. Also, you must specify user for MySQL instance and his passoword. Password can be set plaintext or placed to some file, which content you can get with 'cat' utility.
 Example:
