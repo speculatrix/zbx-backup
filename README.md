@@ -14,5 +14,5 @@ ROTATION=10
 
 For database backup v0.4 expects what you have innobackupex utility installed. Also, you must specify user for MySQL instance and his passoword. Password can be set plaintext or placed to some file, which content you can get with 'cat' utility.
 Example:  
-DB_USER="root"
-DB_PASS=`cat /root/.mysql`
+DB_USER="root"  
+DB_PASS=`cat /root/.mysql`  
