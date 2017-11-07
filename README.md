@@ -1,5 +1,7 @@
 # zbx_backup
 Making simple backup of Zabbix instance.
+Current stable verson:  
+<b>0.4.3</b>
 
 ## Using
 You must necessarily specify some variables on the top of the script:  
