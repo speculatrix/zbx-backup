@@ -1,5 +1,5 @@
 # zbx_backup
-Making simple backup of Zabbix instance.
+Making simple backup of Zabbix instance.  
 Current stable verson:  
 <b>0.4.3</b>
 
