@@ -21,9 +21,6 @@ ZBX_FILES_TAR=$TMP/zbx_files_$TIMESTAMP.tar
 MYSQLDUMP=/usr/bin/mysqldump
 INNOBACKUPEX=/usr/bin/innobackupex
 
-# Database backup settings
-DB_NAME="zabbix"
-
 # Backing up directories
 ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
 ### END Static settings ###
@@ -44,6 +41,9 @@ Usage:
 -i|--use-innobackupex	- will use 'innobackupex' utility to backup database
 -m|--use-mysqldump	- will use 'mysqldump' utility to backup database
 -d|--db-only		- backing up database only without Zabbix config files etc
+-du|--db-user		- username for zabbix database
+-dp|--db-password	- password for database user
+-dn|--db-name		- database name ('zabbix' by default)
 -h|--help		- print this help message
 -v|--version		- print version number
 
@@ -93,17 +93,22 @@ do
 			DB_ONLY="YES"
 			shift
 			;;
-		"-du"|"--db-user")
+		"-u"|"--db-user")
 			DB_USER=$2
 			shift
 			shift
 			;;
-		"-dp"|"--db-password")
+		"-p"|"--db-password")
 			DB_PASS=$2
 			if [[ -f $DB_PASS ]]
 			then
 				DB_PASS=`cat $DB_PASS`
 			fi
+			shift
+			shift
+			;;
+		"-n"|"--db-name")
+			DB_NAME=$2
 			shift
 			shift
 			;;
@@ -125,6 +130,13 @@ do
 	esac
 done
 
+# If user didn't set db name, using default name (zabbix)
+if ! [[ $DB_NAME ]]
+then
+	DB_NAME='zabbix'
+fi
+
+
 # We cannot use both '-m' and '-i' options, so breaks here
 if [[ $USE_INNOBACKUPEX == "YES" ]] && [[ $USE_MYSQLDUMP == "YES" ]]
 then
@@ -140,7 +152,7 @@ fi
 # Check if username and password provided by user
 if [[ ${#DB_USER} == 0 ]] || [[ ${#DB_PASS} == 0 ]]
 then
-	echo "ERROR: You must provide both username and password for database '$DB_NAME'. Use '--help' to learn how."
+	echo "ERROR: You must provide both username and password and database '$DB_NAME'. Use '--help' to learn how."
 	exit 1
 fi
 
@@ -242,25 +254,14 @@ function RotateOldCopies() {
 if [[ $DEBUG == "YES" ]]
 then
 	echo "Given settings"
-	echo "--------------"
-	printf "Database name\t\t: %s\n" $DB_NAME
-	printf "Database user\t\t: %s\n" $DB_USER
-	printf "Database pass\t\t: %s\n" $DB_PASS
-	printf "Use compression\t\t: %s\n" $USE_COMPRESSION
-	printf "Compress with\t\t: %s\n" $COMPRESS_WITH
-	printf "Rotate copies\t\t: %s\n" $ROTATION
-	if [[ $USE_MYSQLDUMP != "YES" ]]
-	then
-		printf "Use mysqldump\t\t: %s\n" "NO"
-	else
-		printf "Use mysqldump\t\t: %s\n" $USE_MYSQLDUMP
-	fi
-	if [[ $USE_INNOBACKUPEX != "YES" ]]
-	then
-		printf "Use innobackupex\t\t: %s\n" "NO"
-	else
-		printf "Use innobackupex\t\t: %s\n" $USE_INNOBACKUPEX
-	fi
+	
+	printf "%-20s : %-25s\n" "Database name" $DB_NAME
+	printf "%-20s : %-25s\n" "Database user" $DB_USER
+	printf "%-20s : %-25s\n" "Database password" $DB_PASS
+	printf "%-20s : %-25s\n" "Use compression" $USE_COMPRESSION
+	printf "%-20s : %-25s\n" "Compression utility" $COMPRESS_WITH
+	printf "%-20s : %-25s\n" "Old copies count" $ROTATION
+	
 	echo -n "Continue?[y/n] "
 	read ans
 	
