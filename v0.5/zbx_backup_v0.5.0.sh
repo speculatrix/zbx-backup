@@ -22,8 +22,6 @@ MYSQLDUMP=/usr/bin/mysqldump
 INNOBACKUPEX=/usr/bin/innobackupex
 
 # Database backup settings
-DB_USER="root"
-DB_PASS_FILE=/root/.mysql
 DB_NAME="zabbix"
 
 # Backing up directories
@@ -95,12 +93,30 @@ do
 			DB_ONLY="YES"
 			shift
 			;;
+		"-du"|"--db-user")
+			DB_USER=$2
+			shift
+			shift
+			;;
+		"-dp"|"--db-password")
+			DB_PASS=$2
+			if [[ -f $DB_PASS ]]
+			then
+				DB_PASS=`cat $DB_PASS`
+			fi
+			shift
+			shift
+			;;
 		"-h"|"--help")
 			PrintHelpMessage
 			;;
 		"-v"|"--version")
 			echo $VERSION
 			exit 0
+			;;
+		"--debug")
+			DEBUG="YES"
+			shift
 			;;
 		*)
 			echo "Syntax error! Please, use '--help' to view correct usage examples."
@@ -118,6 +134,13 @@ then
 elif [[ $USE_INNOBACKUPEX != "YES" ]] && [[ $USE_MYSQLDUMP != "YES" ]] && [[ $DB_ONLY != "YES" ]]
 then
 	echo "ERROR: You must specify at least one database backup utility. Use '--help' to learn how."
+	exit 1
+fi
+
+# Check if username and password provided by user
+if [[ ${#DB_USER} == 0 ]] || [[ ${#DB_PASS} == 0 ]]
+then
+	echo "ERROR: You must provide both username and password for database '$DB_NAME'. Use '--help' to learn how."
 	exit 1
 fi
 
@@ -150,15 +173,6 @@ function BackingUp() {
 		return 1
 	fi
 	
-	# Getting DB password from file
-	if [[ -f $DB_PASS_FILE ]]
-	then
-		DB_PASS=`cat $DB_PASS_FILE`
-	else
-		echo "ERROR: Cannot open file with database password ($DB_PASS_FILE)"
-		exit 1
-	fi
-
 	# Backing up database
 	# If we want to use mysqldump to backup database
 	if [[ $USE_MYSQLDUMP == "YES" ]]
@@ -166,7 +180,7 @@ function BackingUp() {
 		DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
 		if [[ -f $MYSQLDUMP ]]
 		then
-			$MYSQLDUMP -u$DB_USER -p$DB_PASS --databases "$DB_NAME" > $DB_BACKUP_DST
+			$MYSQLDUMP -u$DB_USER -p$DB_PASS --databases $DB_NAME > $DB_BACKUP_DST
 		else
 			echo "ERROR: 'mysqldump' utility not found ($MYSQLDUMP)."
 			exit 1
@@ -224,6 +238,33 @@ function RotateOldCopies() {
 		echo "INFO: We have less or equal $ROTATION old copies: $COUNT. Do nothing..." >> $LOGFILE
 	fi
 }
+
+if [[ $DEBUG == "YES" ]]
+then
+	echo "Given settings"
+	echo "--------------"
+	printf "Database name\t\t: %s\n" $DB_NAME
+	printf "Database user\t\t: %s\n" $DB_USER
+	printf "Database pass\t\t: %s\n" $DB_PASS
+	printf "Use compression\t\t: %s\n" $USE_COMPRESSION
+	printf "Compress with\t\t: %s\n" $COMPRESS_WITH
+	printf "Rotate copies\t\t: %s\n" $ROTATION
+	if [[ $USE_MYSQLDUMP != "YES" ]]
+	then
+		printf "Use mysqldump\t\t: %s\n" "NO"
+	else
+		printf "Use mysqldump\t\t: %s\n" $USE_MYSQLDUMP
+	fi
+	if [[ $USE_INNOBACKUPEX != "YES" ]]
+	then
+		printf "Use innobackupex\t\t: %s\n" "NO"
+	else
+		printf "Use innobackupex\t\t: %s\n" $USE_INNOBACKUPEX
+	fi
+	echo -n "Continue?[y/n] "
+	read ans
+	
+fi
 
 # Cleaning TMP and Running backup operations
 TmpClean && BackingUp
