@@ -41,9 +41,9 @@ Usage:
 -i|--use-innobackupex	- will use 'innobackupex' utility to backup database
 -m|--use-mysqldump	- will use 'mysqldump' utility to backup database
 -d|--db-only		- backing up database only without Zabbix config files etc
--du|--db-user		- username for zabbix database
--dp|--db-password	- password for database user
--dn|--db-name		- database name ('zabbix' by default)
+-u|--db-user		- username for zabbix database
+-p|--db-password	- password for database user
+-n|--db-name		- database name ('zabbix' by default)
 -h|--help		- print this help message
 -v|--version		- print version number
 
