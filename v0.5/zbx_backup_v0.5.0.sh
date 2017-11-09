@@ -256,18 +256,21 @@ function RotateOldCopies() {
 
 if [[ $DEBUG == "YES" ]]
 then
-	echo "Given settings"
-	
+	echo -e "Given settings:\n"
 	printf "%-20s : %-25s\n" "Database name" $DB_NAME
 	printf "%-20s : %-25s\n" "Database user" $DB_USER
 	printf "%-20s : %-25s\n" "Database password" $DB_PASS
 	printf "%-20s : %-25s\n" "Use compression" $USE_COMPRESSION
 	printf "%-20s : %-25s\n" "Compression utility" $COMPRESS_WITH
 	printf "%-20s : %-25s\n" "Old copies count" $ROTATION
-	
-	echo -n "Continue?[y/n] "
+	if [[ $USE_MYSQLDUMP == "YES" ]]
+	then		
+		printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP
+	else
+		printf "%-20s : %-25s\n" "Use innobackupex" $USE_INNOBACKUPEX
+	fi
+	echo -e "\nContinue?[y/n] "
 	read ans
-	
 fi
 
 # Cleaning TMP and Running backup operations
