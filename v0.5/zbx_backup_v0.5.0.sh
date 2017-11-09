@@ -10,12 +10,6 @@
 #
 VERSION="0.5.0"
 
-# Colors ANSI escape codes for color output
-RED='\033[0;31m'			# Red color
-YELLOW='\033[1;33m'			# Yellow color
-BLUE='\033[1;34m'			# Light blue color
-NON_COLOR='\033[0m'			# Reset Color
-
 ### Static setttings ###
 # Working directories and files
 DEST=/mnt/nfs/shv-mon01			# Where we should  store final archive
@@ -46,7 +40,7 @@ fi
 function PrintHelpMessage() {
 echo "
 zbx_backup, version: $VERSION
-(c) Alexander Khatsayuk, 2017
+(c) Khatsayuk Alexander, 2017
 Usage:
 -c|--compress-with	- gzip|bzip2|xz|lbzip2|pbzip2
 -i|--use-innobackupex	- will use 'innobackupex' utility to backup database
@@ -118,12 +112,12 @@ done
 # We cannot use both '-m' and '-i' options, so breaks here
 if [[ $USE_INNOBACKUPEX == "YES" ]] && [[ $USE_MYSQLDUMP == "YES" ]]
 then
-	echo -e "${RED}ERROR${NON_COLOR}: You cannot use '-m' and '-i' options together!"
+	echo "ERROR: You cannot use '-m' and '-i' options together!"
 	exit 1
 # Also we should use at least one of them
 elif [[ $USE_INNOBACKUPEX != "YES" ]] && [[ $USE_MYSQLDUMP != "YES" ]] && [[ $DB_ONLY != "YES" ]]
 then
-	echo -e "${RED}ERROR${NON_COLOR}: You must specify at least one database backup utility. Use '--help' to learn how."
+	echo "ERROR: You must specify at least one database backup utility. Use '--help' to learn how."
 	exit 1
 fi
 
@@ -144,7 +138,7 @@ function BackingUp() {
 				tar -rf $ZBX_FILES_TAR ${ZBX_CATALOGS[$i]}
 			done
 		else
-			echo -e "${RED}ERROR${NON_COLOR}: Cannot create TAR archive with zabbix data files."
+			echo "ERROR: Cannot create TAR archive with zabbix data files."
 			exit 1
 		fi
 	fi
@@ -156,12 +150,12 @@ function BackingUp() {
 		return 1
 	fi
 	
-	# Getting DB password
+	# Getting DB password from file
 	if [[ -f $DB_PASS_FILE ]]
 	then
 		DB_PASS=`cat $DB_PASS_FILE`
 	else
-		echo -e "${RED}ERROR${NON_COLOR}: Cannot open file with database password ($DB_PASS_FILE)"
+		echo "ERROR: Cannot open file with database password ($DB_PASS_FILE)"
 		exit 1
 	fi
 
@@ -174,7 +168,7 @@ function BackingUp() {
 		then
 			$MYSQLDUMP -u$DB_USER -p$DB_PASS --databases "$DB_NAME" > $DB_BACKUP_DST
 		else
-			echo -e "${RED}ERROR${NON_COLOR}: 'mysqldump' utility not found ($MYSQLDUMP)."
+			echo "ERROR: 'mysqldump' utility not found ($MYSQLDUMP)."
 			exit 1
 		fi
 	# If we want to use innobackupex to backup database
@@ -183,10 +177,10 @@ function BackingUp() {
 		DB_BACKUP_DST=$TMP/zbx_mysql_files_$TIMESTAMP
 		if [[ -f $INNOBACKUPEX ]]
 		then
-			$INNOBACKUPEX --user=$DB_USER --password=$DB_PASS --no-timestamp $DB_BACKUP_DST
-			$INNOBACKUPEX --apply-log --redo-only --no-timestamp $DB_BACKUP_DST
+			$INNOBACKUPEX --user=$DB_USER --password=$DB_PASS --no-timestamp --parallel=4 $DB_BACKUP_DST
+			$INNOBACKUPEX --apply-log --no-timestamp $DB_BACKUP_DST
 		else
-			echo -e "${RED}ERROR${NON_COLOR}: Cannot find 'innobackupex' utility ($INNOBACKUPEX)."
+			echo "ERROR: Cannot find 'innobackupex' utility ($INNOBACKUPEX)."
 			exit 1
 		fi
 	fi
@@ -237,7 +231,7 @@ TmpClean && BackingUp
 # Checking last exit code for backup function
 if [[ $? -ne 0 ]]
 then
-	echo -e "${RED}ERROR${NON_COLOR}: Backup operation hasn't finished correctly. Look into log file to find posible reason ($LOGFILE)." 
+	echo "ERROR: Backup operation hasn't finished correctly. Look into log file to find posible reason ($LOGFILE)." 
 	exit 1
 fi
 
