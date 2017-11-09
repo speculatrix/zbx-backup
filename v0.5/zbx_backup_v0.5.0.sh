@@ -47,10 +47,13 @@ Usage:
 -h|--help		- print this help message
 -v|--version		- print version number
 
-Example:
-zbx_backup --compress-with lbzip2 --use-innobackupex
-zbx_backup --compress-with gzip --use-mysqldump
-zbx_backup --compress-with xz --db-only
+Examples:
+# Making backup of Zabbix database and config files with innobackupex. compress it with lbzip2.
+zbx_backup --compress-with lbzip2 --use-innobackupex --db-user root --db-password P@ssw0rd
+# Making backup of Zabbix database and config files with innobackupex. compress it with lbzip2.
+zbx_backup --compress-with gzip --use-mysqldump --db-user zabbix --db-password zabbix --db-name zabbix_database
+# Making backup of Zabbix database only and compress it with xz utility.
+zbx_backup --compress-with xz --db-only -u root -p P@ssw0rd
 "
 exit 0
 }
