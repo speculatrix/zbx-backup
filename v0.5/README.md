@@ -1,6 +1,6 @@
 # v0.5
 
-v0.5 has many improvements and got something about user-friendly interface.  
+v0.5 has many improvements and got something like user-friendly interface.  
 Now, you can use arguments in command-line, decide which program to use for backing up database and compress result files.  
 Also I've added much more checks, error processing, so I hope it can helps to prevent some user's errors.  
 So, main fiature - command line arguments. Now you needn't to set all variables in executable file (except ZBX_CATALOGS), you can just use argument. Next you can see full list of them:  
