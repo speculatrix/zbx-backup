@@ -36,12 +36,13 @@ zbx_backup, version: $VERSION
 (c) Khatsayuk Alexander, 2017
 Usage:
 -c|--compress-with	- gzip|bzip2|lbzip2|pbzip2|xz
+-r|--rotation		- set copies count what we will save (default: 10)
 -i|--use-innobackupex	- will use 'innobackupex' utility to backup database
 -m|--use-mysqldump	- will use 'mysqldump' utility to backup database
 -d|--db-only		- backing up database only without Zabbix config files etc
 -u|--db-user		- username for zabbix database
 -p|--db-password	- password for database user
--n|--db-name		- database name ('zabbix' by default)
+-n|--db-name		- database name (default: 'zabbix')
 -h|--help		- print this help message
 -v|--version		- print version number
 --debug			- print result ingormation and exit
@@ -111,6 +112,11 @@ do
 			;;
 		"-n"|"--db-name")
 			DB_NAME=$2
+			shift
+			shift
+			;;
+		"-r"|"--rotation")
+			ROTATION=$2
 			shift
 			shift
 			;;
