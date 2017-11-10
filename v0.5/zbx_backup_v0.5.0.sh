@@ -300,7 +300,7 @@ then
 fi
 
 # Compressing if resulted files exists
-if [[ $USE_COMPRESSION == "YES" ]]
+if [[ $USE_COMPRESSION == "YES" ]] && [[ -x "/usr/bin/$COMPRESS_WITH" ]]
 then
 	case $COMPRESS_WITH in
 		"gzip")
