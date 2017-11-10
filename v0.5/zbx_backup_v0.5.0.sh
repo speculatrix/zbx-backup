@@ -20,8 +20,6 @@ TIMESTAMP=`date +%d.%m.%Y.%H%M%S`	# Current timestamp
 ZBX_FILES_TAR=$TMP/zbx_files_$TIMESTAMP.tar
 MYSQLDUMP=/usr/bin/mysqldump
 INNOBACKUPEX=/usr/bin/innobackupex
-
-# Backing up directories
 ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
 ### END Static settings ###
 
@@ -37,7 +35,7 @@ echo "
 zbx_backup, version: $VERSION
 (c) Khatsayuk Alexander, 2017
 Usage:
--c|--compress-with	- gzip|bzip2|xz|lbzip2|pbzip2
+-c|--compress-with	- gzip|bzip2|lbzip2|pbzip2|xz
 -i|--use-innobackupex	- will use 'innobackupex' utility to backup database
 -m|--use-mysqldump	- will use 'mysqldump' utility to backup database
 -d|--db-only		- backing up database only without Zabbix config files etc
@@ -256,21 +254,32 @@ function RotateOldCopies() {
 
 if [[ $DEBUG == "YES" ]]
 then
-	echo -e "Given settings:\n"
+	function join { local IFS="$1"; shift; echo "$*"; }
+
 	printf "%-20s : %-25s\n" "Database name" $DB_NAME
 	printf "%-20s : %-25s\n" "Database user" $DB_USER
 	printf "%-20s : %-25s\n" "Database password" $DB_PASS
 	printf "%-20s : %-25s\n" "Use compression" $USE_COMPRESSION
 	printf "%-20s : %-25s\n" "Compression utility" $COMPRESS_WITH
 	printf "%-20s : %-25s\n" "Old copies count" $ROTATION
+	printf "%-20s : %-25s\n" "Logfile location" $LOGFILE
+	printf "%-20s : %-25s\n" "Temp directory" $TMP
+	printf "%-20s : %-25s\n" "Dinal fistination" $DEST
+	printf "%-20s : %-30s\n" "Zabbix catalogs" `join ', ' ${ZBX_CATALOGS[@]}`
+		
 	if [[ $USE_MYSQLDUMP == "YES" ]]
-	then		
+	then			
 		printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP
 	else
-		printf "%-20s : %-25s\n" "Use innobackupex" $USE_INNOBACKUPEX
+		printf "%-20s : %-25s\n" "Use mysqldump" "NO"
 	fi
-	echo -e "\nContinue?[y/n] "
-	read ans
+	if [[ $USE_INNOBACKUPEX == "YES" ]]
+	then		
+		printf "%-20s : %-25s\n" "Use innobackupex" $USE_INNOBACKUPEX
+	else
+		printf "%-20s : %-25s\n" "Use innobackupex" "NO"
+	fi
+	exit 0
 fi
 
 # Cleaning TMP and Running backup operations
@@ -286,12 +295,33 @@ fi
 # Compressing if resulted files exists
 if [[ $USE_COMPRESSION == "YES" ]]
 then
+	case $COMPRESS_WITH in
+		"gzip")
+			EXT="gz"
+			;;
+		"bzip2"|"lbzip2"|"pbzip2")
+			EXT="bz2"
+			;;
+		"xz")
+			EXT="xz"
+			;;
+	esac
+	FULL_ARC="zbx_backup_$TIMESTAMP.tar.$EXT"
 	if [[ $DB_ONLY == "YES" ]]
 	then
 		tar cf $FULL_ARC -I $COMPRESS_WITH $DB_BACKUP_DST
 	elif [[ -f $ZBX_FILES_TAR ]]
 	then
 		tar cf $FULL_ARC -I $COMPRESS_WITH $ZBX_FILES_TAR $DB_BACKUP_DST
+	fi
+else
+	FULL_ARC="zbx_backup_$TIMESTAMP.tar"
+	if [[ $DB_ONLY == "YES" ]]
+	then
+		tar cf $FULL_ARC $DB_BACKUP_DST
+	elif [[ -f $ZBX_FILES_TAR ]]
+	then
+		tar cf $FULL_ARC $ZBX_FILES_TAR $DB_BACKUP_DST
 	fi
 fi
 
