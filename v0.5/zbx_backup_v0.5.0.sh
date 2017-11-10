@@ -44,6 +44,7 @@ Usage:
 -n|--db-name		- database name ('zabbix' by default)
 -h|--help		- print this help message
 -v|--version		- print version number
+--debug			- print result ingormation and exit
 
 Examples:
 # Making backup of Zabbix database and config files with innobackupex. compress it with lbzip2.
@@ -153,7 +154,7 @@ fi
 # Check if username and password provided by user
 if [[ ${#DB_USER} == 0 ]] || [[ ${#DB_PASS} == 0 ]]
 then
-	echo "ERROR: You must provide both username and password and database '$DB_NAME'. Use '--help' to learn how."
+	echo "ERROR: You must provide both username and password for database '$DB_NAME'. Use '--help' to learn how."
 	exit 1
 fi
 
@@ -264,7 +265,7 @@ then
 	printf "%-20s : %-25s\n" "Old copies count" $ROTATION
 	printf "%-20s : %-25s\n" "Logfile location" $LOGFILE
 	printf "%-20s : %-25s\n" "Temp directory" $TMP
-	printf "%-20s : %-25s\n" "Dinal fistination" $DEST
+	printf "%-20s : %-25s\n" "Final distination" $DEST
 	printf "%-20s : %-30s\n" "Zabbix catalogs" `join ', ' ${ZBX_CATALOGS[@]}`
 		
 	if [[ $USE_MYSQLDUMP == "YES" ]]
@@ -306,7 +307,7 @@ then
 			EXT="xz"
 			;;
 	esac
-	FULL_ARC="zbx_backup_$TIMESTAMP.tar.$EXT"
+	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar.$EXT"
 	if [[ $DB_ONLY == "YES" ]]
 	then
 		tar cf $FULL_ARC -I $COMPRESS_WITH $DB_BACKUP_DST
@@ -315,7 +316,7 @@ then
 		tar cf $FULL_ARC -I $COMPRESS_WITH $ZBX_FILES_TAR $DB_BACKUP_DST
 	fi
 else
-	FULL_ARC="zbx_backup_$TIMESTAMP.tar"
+	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar"
 	if [[ $DB_ONLY == "YES" ]]
 	then
 		tar cf $FULL_ARC $DB_BACKUP_DST
