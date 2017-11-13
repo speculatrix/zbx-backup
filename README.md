@@ -5,6 +5,7 @@ Current stable verson:
 <b>0.5.1</b>  
 
 ## Using of v0.4
+### Version 0.4 is not development anymore
 You must necessarily specify some variables on the top of the script:  
 <b>DEST:</b> the place where we should store final archive.  
 <b>TMP:</b> the script creates some temporary files and one of them is SQL backup folder. So, you must specify catalog of relevant size.  
