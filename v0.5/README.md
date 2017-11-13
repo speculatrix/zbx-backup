@@ -1,9 +1,9 @@
 # v0.5
 
-v0.5 has many improvements and got something about user-friendly interface.  
+v0.5 has many improvements and got something like user-friendly interface.  
 Now, you can use arguments in command-line, decide which program to use for backing up database and compress result files.  
 Also I've added much more checks, error processing, so I hope it can helps to prevent some user's errors.  
-So, main fiature - command line arguments. Now you needn't to set all variables in executable file (except ZBX_CATALOGS), you can just use argument. Next you can see full list of them:  
+So, main fiature - command line arguments. Now you needn't to set all variables in executable file (except ZBX_CATALOGS), you can just use arguments. Next you can see full list of them:  
 1. Now we have '--help' option, which can show you simple help message with examples  
 ![alt text](https://pp.userapi.com/c639426/v639426269/57d44/f4GP3k8HbKs.jpg)  
 2. Also, I've added '--version' and '--debug' keys. The first one just prints script version, and the second one prints the table with result of all settings you have set at startup and exit.  
