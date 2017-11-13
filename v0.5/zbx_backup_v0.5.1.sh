@@ -39,7 +39,7 @@ Usage:
 -m|--use-mysqldump	- will use 'mysqldump' utility to backup database
 -d|--db-only		- backing up database only without Zabbix config files etc
 -u|--db-user		- username for zabbix database
--p|--db-password	- password for database user and can be path to file contains the password or leave it empty for prompt it
+-p|--db-password	- password for database user and can be path to file contains the password or set it to '-' for prompt
 -n|--db-name		- database name (default: 'zabbix')
 -h|--help		- print this help message
 -v|--version		- print version number
