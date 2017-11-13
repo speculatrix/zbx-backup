@@ -8,7 +8,7 @@
 # After a few tests I reccomend to use lbzip2. It makes archive faster, but almost
 # two times bigger than xz. Gzip it fine too, but as bzip2, rather slow (in my case).
 #
-VERSION="0.5.0"
+VERSION="0.5.1"
 
 ### Static setttings ###
 # Working directories and files
