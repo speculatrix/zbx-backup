@@ -10,20 +10,11 @@
 #
 VERSION="0.5.2"
 
-### Static setttings ###
-# Working directories and files
-TMP="/var/tmp/zbx_backup"			# Where to store temp MySQL backup, before it will be compress
-ROTATION=10					# How many copies we should store. Set to 0, if you needn't rotation.
-TIMESTAMP=`date +%d.%m.%Y.%H%M%S`		# Current timestamp
-#ZBX_FILES_TAR="$TMP/zbx_files_$TIMESTAMP.tar"
+# Current timestamp
+TIMESTAMP=`date +%d.%m.%Y.%H%M%S`
+# These catalogs will save too
 ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
 ### END Static settings ###
-
-# Checking TEMP directory
-if ! [[ -d "$TMP" ]]
-then
-	mkdir -p $TMP
-fi
 
 # The function just print help message
 function PrintHelpMessage() {
@@ -32,13 +23,14 @@ zbx_backup, version: $VERSION
 (c) Khatsayuk Alexander, 2017
 Usage:
 -s|--save-to		- choose location to save result archive file (default: current directory)
+-t|--temp-folder	- temp folder where will be place database dump (default: /tmp)
 -c|--compress-with	- gzip|bzip2|lbzip2|pbzip2|xz
 -r|--rotation		- set copies count what we will save (default: 10)
 -x|--use-xtrabackup	- will use 'xtrabackup' utility to backup database
 -m|--use-mysqldump	- will use 'mysqldump' utility to backup database
 -d|--db-only		- backing up database only without Zabbix config files etc
--u|--db-user		- username for zabbix database
--p|--db-password	- password for database user and can be path to file contains the password or set it to '-' for prompt
+-u|--db-user		- username for connection to zabbix database (must be 'root' for xtrabackup)
+-p|--db-password	- password for database user; also can be path to file with password or '-' for prompt
 -n|--db-name		- database name (default: 'zabbix')
 -h|--help		- print this help message
 -v|--version		- print version number
@@ -51,6 +43,8 @@ zbx_backup --compress-with lbzip2 --use-xtrabackup --db-user root --db-password 
 zbx_backup --compress-with gzip --use-mysqldump --db-user zabbix --db-password /root/.mysql --db-name zabbix_database
 # Making backup of Zabbix database only and compress it with xz utility.
 zbx_backup --compress-with xz --db-only -u root -p P@ssw0rd
+
+More on GitHub (https://github.com/asand3r/zbx_backup)
 "
 exit 0
 }
@@ -58,8 +52,7 @@ exit 0
 # Parsing given arguments
 if [[ $# -eq 0 ]]
 then
-	echo "Syntax error! Please, provide some arguments. Use '--help' to view examples."
-	exit 1
+	PrintHelpMessage
 fi
 
 # Ooh, it makes me mad. I've almost get it, but my pythoted brain refuses constructions like this. %)
@@ -81,7 +74,12 @@ do
 			shift
 			shift
 			;;
-		"-x"|"-i"|"--use-xtrabackup")
+		"-t"|"--temp-folder")
+			TMP=$2
+			shift
+			shift
+			;;	
+		"-x"|"--use-xtrabackup")
 			USE_XTRABACKUP="YES"
 			shift
 			;;
@@ -139,23 +137,28 @@ do
 			shift
 			;;
 		*)
-			echo "Syntax error! Please, use '--help' to view correct usage examples."
+			echo "Syntax error! Please, use '--help' to view usage examples."
 			exit 1
 			;;
 	esac
 done
 
-# If user didn't set db name, using default name (zabbix)
-if ! [[ "$DB_NAME" ]]
-then
-	DB_NAME="zabbix"
-fi
+# Set defaults if arguments not present
+if ! [[ $TMP ]]; then TMP="/tmp"; fi					# -t|--temp-dir
+if ! [[ $DB_NAME ]]; then DB_NAME="zabbix"; fi				# -n|--db-name
+if ! [[ $DEST ]]; then DEST=`pwd`; LOGFILE="$DEST/zbx_backup.log"; fi	# -s|--save-to
+if ! [[ $ROTATION ]]; then ROTATION=10; fi				# -r|--rotation
+if ! [[ `command -v $COMPRESS_WITH` ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
 
-# If --save-to option wasn't set, use current directory to save all data
-if ! [[ $DEST ]]
+#
+# A lot of checks, sorry, trying to make this script more friendly
+#
+
+# Checking TEMP directory existing
+if ! [[ -d "$TMP" ]]
 then
-	DEST=`pwd`
-	LOGFILE="$DEST/zbx_backup.log"
+	mkdir -p $TMP
+	if [[ $? -ne 0 ]]; then echo 'ERROR: Cannot create temp directory.'; exit 1; fi
 fi
 
 # Enter the password if it zero length
@@ -180,9 +183,13 @@ fi
 # Check if username and password provided by user
 if [[ ${#DB_USER} == 0 ]]
 then
-	echo "ERROR: You must provide username for database '$DB_NAME'. Use '--help' to learn how."
+	echo "ERROR: You must provide not Null username for database '$DB_NAME'. Use '--help' to learn how."
 	exit 1
 fi
+
+#
+# End of checks
+#
 
 # The function cleans $TMP directory
 function TmpClean() {
@@ -243,12 +250,12 @@ function BackingUp() {
 	if [[ "$USE_MYSQLDUMP" == "YES" ]]
 	then
 		DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
-		MYSQLDUMP=`command -v mysqldump`
+		MYSQLDUMP_PATH=`command -v mysqldump`
 		if [[ $? -eq 0 ]]
 		then
-			$MYSQLDUMP -u$DB_USER -p$DB_PASS --databases $DB_NAME --single-transaction > $DB_BACKUP_DST
+			$MYSQLDUMP_PATH -u$DB_USER -p$DB_PASS --databases $DB_NAME --single-transaction > $DB_BACKUP_DST
 		else
-			echo "ERROR: 'mysqldump' utility not found ($MYSQLDUMP)."
+			echo "ERROR: 'mysqldump' utility not found ($MYSQLDUMP_PATH)."
 			TmpClean
 			exit 1
 		fi
@@ -256,13 +263,13 @@ function BackingUp() {
 	elif [[ "$USE_XTRABACKUP" = "YES" ]]
 	then
 		DB_BACKUP_DST=$TMP/zbx_mysql_files_$TIMESTAMP
-		XTRABACKUP=`command -v xtrabackup`
+		XTRABACKUP_PATH=`command -v xtrabackup`
 		if [[ $? -eq 0 ]]
 		then
-			$XTRABACKUP --backup --user=$DB_USER --password=$DB_PASS --no-timestamp --parallel=4 --target-dir=$DB_BACKUP_DST
-			$XTRABACKUP --prepare --user=$DB_USER --password=$DB_PASS --no-timestamp --apply-log --target-dir=$DB_BACKUP_DST
+			$XTRABACKUP_PATH --backup --user=$DB_USER --password=$DB_PASS --no-timestamp --parallel=4 --target-dir=$DB_BACKUP_DST
+			$XTRABACKUP_PATH --prepare --user=$DB_USER --password=$DB_PASS --no-timestamp --apply-log --target-dir=$DB_BACKUP_DST
 		else
-			echo "ERROR: Cannot find 'xtrabackup' utility ($XTRABACKUP)."
+			echo "ERROR: Cannot find 'xtrabackup' utility ($XTRABACKUP_PATH)."
 			exit 1
 		fi
 	fi
@@ -313,27 +320,16 @@ then
 	printf "%-20s : %-25s\n" "Temp directory" $TMP
 	printf "%-20s : %-25s\n" "Final distination" $DEST
 	printf "%-20s : %-30s\n" "Zabbix catalogs" `join ', ' ${ZBX_CATALOGS[@]}`
-		
-	if [[ "$USE_MYSQLDUMP" == "YES" ]]
-	then			
-		printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP
-	else
-		printf "%-20s : %-25s\n" "Use mysqldump" "NO"
-	fi
-	if [[ "$USE_XTRABACKUP" == "YES" ]]
-	then		
-		printf "%-20s : %-25s\n" "Use xtrabackup" $USE_XTRABACKUP
-	else
-		printf "%-20s : %-25s\n" "Use xtrabackup" "NO"
-	fi
+	if [[ "$USE_MYSQLDUMP" == "YES" ]]; then printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP; fi
+	if [[ "$USE_XTRABACKUP" == "YES" ]]; then printf "%-20s : %-25s\n" "Use xtrabackup" $USE_XTRABACKUP; fi
 	exit 0
 fi
 
-# Running backup
+# Running backup function
 BackingUp
 
 # Compressing if resulted files exists
-if [[ "$USE_COMPRESSION" == "YES" ]] && [[ `command -v "$COMPRESS_WITH"` ]]
+if [[ "$USE_COMPRESSION" == "YES" ]]
 then
 	case $COMPRESS_WITH in
 		"gzip")
@@ -346,6 +342,7 @@ then
 			EXT="xz"
 			;;
 	esac
+	
 	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar.$EXT"
 	if [[ "$DB_ONLY" == "YES" ]]
 	then
@@ -374,10 +371,11 @@ RotateOldCopies
 # Cheking and logging results
 if [[ -f "$FULL_ARC" ]]
 then
-	echo "SUCCESS: $TIMESTAMP : Backup date: $TIMESTAMP" >> $LOGFILE
+	FULL_SIZE=`du -sh $FULL_ARC | cut -f1`
+	echo "INFO: $TIMESTAMP : Backup job success. Result file sise is $FULL_SIZE" >> $LOGFILE
 	exit 0
 else
-	echo "ERROR: $TIMESTAMP : Backup wasn't created on $TIMESTAMP" >> $LOGFILE
+	echo "ERROR: $TIMESTAMP : Backup job failed, archive wasn't created." >> $LOGFILE
 	exit 1
 fi
 
