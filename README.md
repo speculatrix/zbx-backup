@@ -17,7 +17,7 @@ So, main fiature - command line arguments. Now you needn't to set all variables 
 5. Added '--rotation' option. It can be used to redefine default old copies count (default is 10).  
 6. Next three options set your connection to MySQL database, it's '--db-name', '--db-user' and '--db-password'. I don't think that they need to be explained. One moment: '--db-name' redefines hardcoded database name - 'zabbix', so you can miss it, if your database has such name.  
 7. Arguments '--use-mysqldump' and '--use-xtrabackup' give you choise which utility to use for database backup. The first one works longer and locks table, so your Zabbix instance can be slower for some time, but second one works quicker and if you have one database per server, I'd recomend to use it. Using of xtrabackup will save all of your MySQL server instance, but mysqldump will save Zabbix server database only.  
-Each argument has short version of itself, you can find notice it in '--help'. So, most short version of looks like that:  
+Each argument has short version of itself, you can find notice it in '--help'. So, most short usage example can looks like that:  
 ```bash
 # zbx_backup -x -u root -p P@ssw0rd
 ```
