@@ -3,6 +3,10 @@ Making simple backup of Zabbix instance. It can save to archive some directories
 Current stable verson:  
 <b>0.5.2</b>  
 
+## TODO List
+- [x] Add autocompletion script for bash-completion  
+- [ ] Add PostgreSQL support  
+
 ## Using of v0.5
 v0.5 has many improvements and got something like user-friendly interface.  
 Now, you can use arguments in command-line, decide which program to use for backing up database and compress result files.  
