@@ -29,3 +29,10 @@ Each argument has short version of itself, you can find notice it in '--help'. S
 ```
 It will use 'xtrabackup' utility and connect to MySQL database with root:P@ssw0rd credentials.  
 As result of script working you will got compressed file contains zabbix database and config files. The file will named with template 'zbx_backup_dd.mm.yyyy.hhmmss' with extension of utility you set (tar.bz2, for example).
+
+## Autocompletion
+There is folder contains 'zbx_backup.bash' file. Ypu can place it to folder /etc/bash_completion.d (if you have 'bash-completion' packet installed) and source it:  
+```bash
+root@server:~# . /etc/bash_completion.d/zbx_backup.bash
+```
+After this you can find simple autocompletion with TAB (you musr place executable file somewhere and name it as 'zbx_backup'; for example, I've placed it to /usr/local/bin)
