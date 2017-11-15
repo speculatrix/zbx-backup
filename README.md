@@ -1,7 +1,7 @@
 # zbx_backup
 Making simple backup of Zabbix instance. It can save to archive some directories and database (MySQL only).  
 Current stable verson:  
-<b>0.5.1</b>  
+<b>0.5.2</b>  
 
 ## Using of v0.5
 v0.5 has many improvements and got something like user-friendly interface.  
