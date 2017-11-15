@@ -5,7 +5,7 @@ Now, you can use arguments in command-line, decide which program to use for back
 Also I've added much more checks, error processing, so I hope it can helps to prevent some user's errors.  
 So, main fiature - command line arguments. Now you needn't to set all variables in executable file (except ZBX_CATALOGS), you can just use arguments. Next you can see full list of them:  
 1. Now we have '--help' option, which can show you simple help message with examples  
-![alt text](https://pp.userapi.com/c834104/v834104412/247a7/IDpZFtrFwmo.jpg)  
+![alt text](https://pp.userapi.com/c841132/v841132025/38baf/kdHb0Pp3R94.jpg)  
 2. Also, I've added '--version' and '--debug' keys. The first one just prints script version, and the second one prints the table with result of all settings you have set at startup and exit.  
 ![alt_text](https://pp.userapi.com/c834104/v834104412/2479e/oVe0ybMtguw.jpg)  
 3. We can use different utils for comression. I've hardcoded the most popular in my opinion - gzip, bzip2, lbzip2, pbzip2 and xz. Each may be set in '--compress-with' option. If you will not set it, as result you will get just 'tar' file.  
