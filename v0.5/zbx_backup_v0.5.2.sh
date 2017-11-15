@@ -143,7 +143,7 @@ if ! [[ $TMP ]]; then TMP="/tmp"; fi					# -t|--temp-dir
 if ! [[ $DB_NAME ]]; then DB_NAME="zabbix"; fi				# -n|--db-name
 if ! [[ $DEST ]]; then DEST=`pwd`; LOGFILE="$DEST/zbx_backup.log"; fi	# -s|--save-to
 if ! [[ $ROTATION ]]; then ROTATION=10; fi				# -r|--rotation
-if ! [[ `command -v $COMPRESS_WITH` ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
+if [[ $USE_COMPRESSION ]] && ! [[ `command -v $COMPRESS_WITH` ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
 
 #
 # A lot of checks, sorry, trying to make this script more friendly
