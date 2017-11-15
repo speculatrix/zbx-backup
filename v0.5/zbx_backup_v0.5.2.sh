@@ -8,6 +8,7 @@
 # After a few tests I reccomend to use lbzip2. It makes archive faster, but almost
 # two times bigger than xz. Gzip it fine too, but as bzip2, rather slow (in my case).
 #
+
 VERSION="0.5.2"
 
 # Current timestamp
@@ -76,6 +77,7 @@ do
 			;;
 		"-t"|"--temp-folder")
 			TMP=$2
+			if [[ $TMP =~ \/$ ]]; then TMP=${TMP%?}; fi
 			shift
 			shift
 			;;	
@@ -85,11 +87,7 @@ do
 			;;
 		"-s"|"--save-to")
 			DEST=$2
-			if [[ $DEST =~ \/$ ]]
-			then
-				DEST=${DEST%?}
-			fi
-			LOGFILE="$DEST/zbx_backup.log"
+			if [[ $DEST =~ \/$ ]]; then DEST=${DEST%?}; LOGFILE="$DEST/zbx_backup.log"; fi
 			shift
 			shift
 			;;
@@ -108,10 +106,7 @@ do
 			;;
 		"-p"|"--db-password")
 			DB_PASS=$2
-			if [[ -f "$DB_PASS" ]]
-			then
-				DB_PASS=`cat $DB_PASS`
-			fi
+			if [[ -f "$DB_PASS" ]]; then DB_PASS=`cat $DB_PASS`; fi
 			shift
 			shift
 			;;
@@ -158,10 +153,10 @@ if ! [[ `command -v $COMPRESS_WITH` ]]; then echo "ERROR: Utility '$COMPRESS_WIT
 if ! [[ -d "$TMP" ]]
 then
 	mkdir -p $TMP
-	if [[ $? -ne 0 ]]; then echo 'ERROR: Cannot create temp directory.'; exit 1; fi
+	if [[ $? -ne 0 ]]; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi
 fi
 
-# Enter the password if it zero length
+# Enter the password if it equal to '-'
 if  [[ $DB_PASS == "-" ]]
 then
 	read -s -p "Please, enter the password for user '$DB_USER' ('$DB_NAME' database): " DB_PASS
@@ -169,12 +164,12 @@ then
 fi
 
 # We cannot use both '-m' and '-i' options, so breaks here
-if [[ "$USE_XTRABACKUP" == "YES" ]] && [[ "$USE_MYSQLDUMP" == "YES" ]]
+if [[ "$USE_XTRABACKUP" ]] && [[ "$USE_MYSQLDUMP" ]]
 then
 	echo "ERROR: You cannot use '-m' and '-i' options together!"
 	exit 1
 # Also we should use at least one of them
-elif [[ "$USE_XTRABACKUP" != "YES" ]] && [[ "$USE_MYSQLDUMP" != "YES" ]] && [[ "$DB_ONLY" != "YES" ]]
+elif ! [[ "$USE_XTRABACKUP" ]] && ! [[ "$USE_MYSQLDUMP" ]] && ! [[ "$DB_ONLY" ]]
 then
 	echo "ERROR: You must specify at least one database backup utility. Use '--help' to learn how."
 	exit 1
@@ -207,7 +202,7 @@ function BackingUp() {
 	TmpClean
 
 	# If '--db-only' option not set
-	if [[ "$DB_ONLY" != "YES" ]]
+	if ! [[ "$DB_ONLY" ]]
 	then
 		ZBX_FILES_TAR=$TMP/zbx_files_$TIMESTAMP.tar
 		# Making initial files tar archive
@@ -231,23 +226,15 @@ function BackingUp() {
 				fi
 			done
 		else
-			echo "ERROR: Cannot create TAR archive with zabbix data files."
+			echo "ERROR: Cannot create TAR archive ($ZBX_FILES_TAR) with data files."
 			TmpClean
 			exit 1
 		fi
 	fi
 
-	# Check last exit code
-	if [[ $? -ne 0 ]]
-	then
-		echo "ERROR: $TIMESTAMP : Cannot create $ZBX_FILES_TAR" >> $LOGFILE
-		TmpClean
-		return 1
-	fi
-	
 	# Backing up database
 	# If we want to use mysqldump to backup database
-	if [[ "$USE_MYSQLDUMP" == "YES" ]]
+	if [[ "$USE_MYSQLDUMP" ]]
 	then
 		DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
 		MYSQLDUMP_PATH=`command -v mysqldump`
@@ -260,7 +247,7 @@ function BackingUp() {
 			exit 1
 		fi
 	# If we want to use xtrabackup to backup database
-	elif [[ "$USE_XTRABACKUP" = "YES" ]]
+	elif [[ "$USE_XTRABACKUP" ]]
 	then
 		DB_BACKUP_DST=$TMP/zbx_mysql_files_$TIMESTAMP
 		XTRABACKUP_PATH=`command -v xtrabackup`
@@ -320,8 +307,8 @@ then
 	printf "%-20s : %-25s\n" "Temp directory" $TMP
 	printf "%-20s : %-25s\n" "Final distination" $DEST
 	printf "%-20s : %-30s\n" "Zabbix catalogs" `join ', ' ${ZBX_CATALOGS[@]}`
-	if [[ "$USE_MYSQLDUMP" == "YES" ]]; then printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP; fi
-	if [[ "$USE_XTRABACKUP" == "YES" ]]; then printf "%-20s : %-25s\n" "Use xtrabackup" $USE_XTRABACKUP; fi
+	if [[ "$USE_MYSQLDUMP" ]]; then printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP; fi
+	if [[ "$USE_XTRABACKUP" ]]; then printf "%-20s : %-25s\n" "Use xtrabackup" $USE_XTRABACKUP; fi
 	exit 0
 fi
 
@@ -329,7 +316,7 @@ fi
 BackingUp
 
 # Compressing if resulted files exists
-if [[ "$USE_COMPRESSION" == "YES" ]]
+if [[ "$USE_COMPRESSION" ]]
 then
 	case $COMPRESS_WITH in
 		"gzip")
@@ -344,7 +331,7 @@ then
 	esac
 	
 	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar.$EXT"
-	if [[ "$DB_ONLY" == "YES" ]]
+	if [[ "$DB_ONLY" ]]
 	then
 		tar cf $FULL_ARC -I $COMPRESS_WITH $DB_BACKUP_DST
 	elif [[ -f "$ZBX_FILES_TAR" ]]
@@ -353,7 +340,7 @@ then
 	fi
 else
 	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar"
-	if [[ "$DB_ONLY" == "YES" ]]
+	if [[ "$DB_ONLY" ]]
 	then
 		tar cf $FULL_ARC $DB_BACKUP_DST
 	elif [[ -f "$ZBX_FILES_TAR" ]]
@@ -372,7 +359,7 @@ RotateOldCopies
 if [[ -f "$FULL_ARC" ]]
 then
 	FULL_SIZE=`du -sh $FULL_ARC | cut -f1`
-	echo "INFO: $TIMESTAMP : Backup job success. Result file sise is $FULL_SIZE" >> $LOGFILE
+	echo "INFO: $TIMESTAMP : Backup job success. Result file sise is $FULL_SIZE." >> $LOGFILE
 	exit 0
 else
 	echo "ERROR: $TIMESTAMP : Backup job failed, archive wasn't created." >> $LOGFILE
