@@ -3,6 +3,10 @@ Making simple backup of Zabbix instance. It can save to archive some directories
 Current stable verson:  
 <b>0.5.2</b>  
 
+## TODO List
+- [x] Add autocompletion script for bash-completion  
+- [ ] Add PostgreSQL support  
+
 ## Using of v0.5
 v0.5 has many improvements and got something like user-friendly interface.  
 Now, you can use arguments in command-line, decide which program to use for backing up database and compress result files.  
@@ -21,7 +25,14 @@ So, main fiature - command line arguments. Now you needn't to set all variables 
 9. Also in v0.5.2 added option '--temp-folder', which set folder for temporary files. It's nessecery and must be ready to accept all MySQL data for all saving procedure time. It has default value: /tmp.  
 Each argument has short version of itself, you can find notice it in '--help'. So, most short usage example can looks like that:  
 ```bash
-# zbx_backup -x -u root -p P@ssw0rd
+root@server:~# zbx_backup -x -u root -p P@ssw0rd
 ```
 It will use 'xtrabackup' utility and connect to MySQL database with root:P@ssw0rd credentials.  
 As result of script working you will got compressed file contains zabbix database and config files. The file will named with template 'zbx_backup_dd.mm.yyyy.hhmmss' with extension of utility you set (tar.bz2, for example).
+
+## Autocompletion
+There is the folder 'bash_completion.d' contains 'zbx_backup.bash' file. You can place it to folder /etc/bash_completion.d (if you have 'bash-completion' packet installed) and source it:  
+```bash
+root@server:~# . /etc/bash_completion.d/zbx_backup.bash
+```
+After this you can find simple autocompletion with TAB (you must place executable file somewhere and name it as 'zbx_backup'; for example, I've placed it to /usr/local/bin)
