@@ -25,7 +25,7 @@ So, main fiature - command line arguments. Now you needn't to set all variables 
 9. Also in v0.5.2 added option '--temp-folder', which set folder for temporary files. It's nessecery and must be ready to accept all MySQL data for all saving procedure time. It has default value: /tmp.  
 Each argument has short version of itself, you can find notice it in '--help'. So, most short usage example can looks like that:  
 ```bash
-# zbx_backup -x -u root -p P@ssw0rd
+root@server:~# zbx_backup -x -u root -p P@ssw0rd
 ```
 It will use 'xtrabackup' utility and connect to MySQL database with root:P@ssw0rd credentials.  
 As result of script working you will got compressed file contains zabbix database and config files. The file will named with template 'zbx_backup_dd.mm.yyyy.hhmmss' with extension of utility you set (tar.bz2, for example).
