@@ -1,5 +1,5 @@
 #
-# This function provide simple autocompletion to zbx_backup script
+# This function provides simple autocompletion to zbx_backup script
 # Place it to /etc/bash_completion.d and run next command:
 # . /etc/bash_completion.d/zbx_backup.bash
 # 
