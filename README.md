@@ -35,4 +35,5 @@ There is the folder 'bash_completion.d' contains 'zbx_backup.bash' file. You can
 ```bash
 root@server:~# . /etc/bash_completion.d/zbx_backup.bash
 ```
-After this you can find simple autocompletion with TAB (you must place executable file somewhere and name it as 'zbx_backup'; for example, I've placed it to /usr/local/bin)
+After this you can find simple autocompletion with TAB (you must place executable file somewhere and name it as 'zbx_backup'; for example, I've placed it to /usr/local/bin)  
+![alt text](https://pp.userapi.com/c841536/v841536677/37165/HhL-1GMUAxg.jpg)
