@@ -106,14 +106,14 @@ do
 			;;
 		"-p"|"--db-password")
 			DB_PASS=$2
-			if [[ -f "$DB_PASS" ]] && [[ -r "$DB_PASS" ]]
+			if [[ -f "$DB_PASS" ]]
 			then
 				DB_PASS=`cat $DB_PASS`
 				if [[ $? -eq 1 ]]
 				then
 					echo "ERROR: Cannot read password from file '$DB_PASS'. Check it permissions."
+					exit 1
 				fi
-				exit 1
 			fi
 			shift
 			shift
