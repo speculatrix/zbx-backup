@@ -9,7 +9,7 @@
 # two times bigger than xz. Gzip it fine too, but as bzip2, rather slow (in my case).
 #
 
-VERSION="0.5.3"
+VERSION="0.5.3 (dev)"
 
 # Current timestamp
 TIMESTAMP=`date +%d.%m.%Y.%H%M%S`
@@ -87,6 +87,7 @@ do
 			;;
 		"-s"|"--save-to")
 			DEST=$2
+			LOGFILE="$DEST/zbx_backup.log"
 			if [[ $DEST =~ \/$ ]]; then DEST=${DEST%?}; LOGFILE="$DEST/zbx_backup.log"; fi
 			shift
 			shift
@@ -106,7 +107,15 @@ do
 			;;
 		"-p"|"--db-password")
 			DB_PASS=$2
-			if [[ -f "$DB_PASS" ]]; then DB_PASS=`cat $DB_PASS`; fi
+			if [[ -f "$DB_PASS" ]]
+			then
+				DB_PASS=`cat $DB_PASS`
+				if [[ $? -eq 1 ]]
+				then
+					echo "ERROR: Cannot read password from file '$DB_PASS'. Check it permissions."
+					exit 1
+				fi
+			fi
 			shift
 			shift
 			;;

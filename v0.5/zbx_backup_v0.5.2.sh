@@ -87,6 +87,7 @@ do
 			;;
 		"-s"|"--save-to")
 			DEST=$2
+			LOGFILE="$DEST/zbx_backup.log"
 			if [[ $DEST =~ \/$ ]]; then DEST=${DEST%?}; LOGFILE="$DEST/zbx_backup.log"; fi
 			shift
 			shift
