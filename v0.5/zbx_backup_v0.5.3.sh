@@ -12,7 +12,7 @@
 VERSION="0.5.3 (dev)"
 
 # Current timestamp
-TIMESTAMP=`date +%d.%m.%Y.%H%M%S`
+TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
 # These catalogs will save too
 ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
 ### END Static settings ###
@@ -77,7 +77,7 @@ do
 			;;
 		"-t"|"--temp-folder")
 			TMP=$2
-			if [[ $TMP =~ \/$ ]]; then TMP=${TMP%?}; fi
+			if [[ $TMP =~ /$ ]]; then TMP=${TMP%?}; fi
 			shift
 			shift
 			;;	
@@ -88,7 +88,7 @@ do
 		"-s"|"--save-to")
 			DEST=$2
 			LOGFILE="$DEST/zbx_backup.log"
-			if [[ $DEST =~ \/$ ]]; then DEST=${DEST%?}; LOGFILE="$DEST/zbx_backup.log"; fi
+			if [[ $DEST =~ /$ ]]; then DEST=${DEST%?}; LOGFILE="$DEST/zbx_backup.log"; fi
 			shift
 			shift
 			;;
@@ -109,7 +109,7 @@ do
 			DB_PASS=$2
 			if [[ -f "$DB_PASS" ]]
 			then
-				DB_PASS=`cat $DB_PASS`
+				DB_PASS=$(cat "$DB_PASS")
 				if [[ $? -eq 1 ]]
 				then
 					echo "ERROR: Cannot read password from file '$DB_PASS'. Check it permissions."
@@ -133,7 +133,7 @@ do
 			PrintHelpMessage
 			;;
 		"-v"|"--version")
-			echo $VERSION
+			echo "$VERSION"
 			exit 0
 			;;
 		"--debug")
@@ -150,9 +150,9 @@ done
 # Set defaults if arguments not present
 if ! [[ $TMP ]]; then TMP="/tmp"; fi					# -t|--temp-dir
 if ! [[ $DB_NAME ]]; then DB_NAME="zabbix"; fi				# -n|--db-name
-if ! [[ $DEST ]]; then DEST=`pwd`; LOGFILE="$DEST/zbx_backup.log"; fi	# -s|--save-to
+if ! [[ $DEST ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi	# -s|--save-to
 if ! [[ $ROTATION ]]; then ROTATION=10; fi				# -r|--rotation
-if [[ $USE_COMPRESSION ]] && ! [[ `command -v $COMPRESS_WITH` ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
+if [[ $USE_COMPRESSION ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
 
 #
 # A lot of checks, sorry, trying to make this script more friendly
@@ -201,7 +201,7 @@ function TmpClean() {
 	then
 		rm -rf $TMP/zbx_*
 	else
-		echo "WARNING: $TIMESTAMP : Cannot clean TMP directory ($TMP)." >> $LOGFILE
+		echo "WARNING: $TIMESTAMP : Cannot clean TMP directory ($TMP)." >> "$LOGFILE"
 	fi
 }
 
@@ -217,9 +217,9 @@ function BackingUp() {
 		# Making initial files tar archive
 		if [[ -d ${ZBX_CATALOGS[0]} ]]
 		then
-			tar cf $ZBX_FILES_TAR ${ZBX_CATALOGS[0]}
+			tar cf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[0]}
 		else
-			echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save if." >> $LOGFILE
+			echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save if." >> "$LOGFILE"
 		fi
 	
 		# Add all other catalogs in $ZBX_CATALOGS array to initial tar archive
@@ -229,9 +229,9 @@ function BackingUp() {
 			do
 				if [[ -d ${ZBX_CATALOGS[$i]} ]]
 				then
-					tar -rf $ZBX_FILES_TAR ${ZBX_CATALOGS[$i]}
+					tar -rf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[$i]}
 				else
-					echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save if." >> $LOGFILE
+					echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save if." >> "$LOGFILE"
 				fi
 			done
 		else
@@ -246,10 +246,10 @@ function BackingUp() {
 	if [[ "$USE_MYSQLDUMP" ]]
 	then
 		DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
-		MYSQLDUMP_PATH=`command -v mysqldump`
+		MYSQLDUMP_PATH=$(command -v mysqldump)
 		if [[ $? -eq 0 ]]
 		then
-			$MYSQLDUMP_PATH -u$DB_USER -p$DB_PASS --databases $DB_NAME --single-transaction > $DB_BACKUP_DST
+			$MYSQLDUMP_PATH -u"$DB_USER" -p"$DB_PASS" --databases "$DB_NAME" --single-transaction > "$DB_BACKUP_DST"
 		else
 			echo "ERROR: 'mysqldump' utility not found ($MYSQLDUMP_PATH)."
 			TmpClean
@@ -259,11 +259,11 @@ function BackingUp() {
 	elif [[ "$USE_XTRABACKUP" ]]
 	then
 		DB_BACKUP_DST=$TMP/zbx_mysql_files_$TIMESTAMP
-		XTRABACKUP_PATH=`command -v xtrabackup`
+		XTRABACKUP_PATH=$(command -v xtrabackup)
 		if [[ $? -eq 0 ]]
 		then
-			$XTRABACKUP_PATH --backup --user=$DB_USER --password=$DB_PASS --no-timestamp --parallel=4 --target-dir=$DB_BACKUP_DST
-			$XTRABACKUP_PATH --prepare --user=$DB_USER --password=$DB_PASS --no-timestamp --apply-log --target-dir=$DB_BACKUP_DST
+			$XTRABACKUP_PATH --backup --user="$DB_USER" --password="$DB_PASS" --no-timestamp --parallel=4 --target-dir="$DB_BACKUP_DST"
+			$XTRABACKUP_PATH --prepare --user="$DB_USER" --password="$DB_PASS" --no-timestamp --apply-log --target-dir="$DB_BACKUP_DST"
 		else
 			echo "ERROR: Cannot find 'xtrabackup' utility ($XTRABACKUP_PATH)."
 			exit 1
@@ -273,7 +273,7 @@ function BackingUp() {
 	# Chech last exit code
 	if [[ $? -ne 0 ]]
 	then
-		echo "ERROR: $TIMESTAMP : Cannot create database backup" >> $LOGFILE
+		echo "ERROR: $TIMESTAMP : Cannot create database backup" >> "$LOGFILE"
 		TmpClean
 		return 1
 	fi
@@ -283,22 +283,22 @@ function BackingUp() {
 # The function making rotation of old backup files
 function RotateOldCopies() {
 	# Getting old copies list and it's count
-	OLD_COPIES=(`ls -1t $DEST/zbx_backup_*`)
+	OLD_COPIES=($(ls -1t "$DEST"/zbx_backup_*))
 	COUNT=${#OLD_COPIES[@]}
 
 	if [[ $COUNT -gt $ROTATION ]] && [[ $ROTATION -ne 0 ]]
 	then
-		for OLD_COPY in ${OLD_COPIES[@]:$ROTATION}
+		for OLD_COPY in "${OLD_COPIES[@]:$ROTATION}"
 		do
 			if [[ -f "$OLD_COPY" ]]
 			then
 				rm -f "$OLD_COPY"
 			else
-				echo "WARNING: $TIMESTAMP : Something was wrong while deleting $OLD_COPY" >> $LOGFILE
+				echo "WARNING: $TIMESTAMP : Something was wrong while deleting $OLD_COPY" >> "$LOGFILE"
 			fi
 		done
 	else
-		echo "INFO: $TIMESTAMP : We have less or equal $ROTATION old copies: $COUNT. Do nothing..." >> $LOGFILE
+		echo "INFO: $TIMESTAMP : We have less or equal $ROTATION old copies: $COUNT. Do nothing..." >> "$LOGFILE"
 	fi
 }
 
@@ -306,16 +306,16 @@ if [[ "$DEBUG" == "YES" ]]
 then
 	function join { local IFS="$1"; shift; echo "$*"; }
 
-	printf "%-20s : %-25s\n" "Database name" $DB_NAME
-	printf "%-20s : %-25s\n" "Database user" $DB_USER
-	printf "%-20s : %-25s\n" "Database password" $DB_PASS
-	printf "%-20s : %-25s\n" "Use compression" $USE_COMPRESSION
-	printf "%-20s : %-25s\n" "Compression utility" $COMPRESS_WITH
-	printf "%-20s : %-25s\n" "Old copies count" $ROTATION
-	printf "%-20s : %-25s\n" "Logfile location" $LOGFILE
-	printf "%-20s : %-25s\n" "Temp directory" $TMP
-	printf "%-20s : %-25s\n" "Final distination" $DEST
-	printf "%-20s : %-30s\n" "Zabbix catalogs" `join ', ' ${ZBX_CATALOGS[@]}`
+	printf "%-20s : %-25s\n" "Database name" "$DB_NAME"
+	printf "%-20s : %-25s\n" "Database user" "$DB_USER"
+	printf "%-20s : %-25s\n" "Database password" "$DB_PASS"
+	printf "%-20s : %-25s\n" "Use compression" "$USE_COMPRESSION"
+	printf "%-20s : %-25s\n" "Compression utility" "$COMPRESS_WITH"
+	printf "%-20s : %-25s\n" "Old copies count" "$ROTATION"
+	printf "%-20s : %-25s\n" "Logfile location" "$LOGFILE"
+	printf "%-20s : %-25s\n" "Temp directory" "$TMP"
+	printf "%-20s : %-25s\n" "Final distination" "$DEST"
+	printf "%-20s : %-30s\n" "Zabbix catalogs" "$(join ', ' "${ZBX_CATALOGS[@]}")"
 	if [[ "$USE_MYSQLDUMP" ]]; then printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP; fi
 	if [[ "$USE_XTRABACKUP" ]]; then printf "%-20s : %-25s\n" "Use xtrabackup" $USE_XTRABACKUP; fi
 	exit 0
@@ -342,19 +342,19 @@ then
 	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar.$EXT"
 	if [[ "$DB_ONLY" ]]
 	then
-		tar cf $FULL_ARC -I $COMPRESS_WITH $DB_BACKUP_DST
+		tar cf "$FULL_ARC" -I "$COMPRESS_WITH" "$DB_BACKUP_DST"
 	elif [[ -f "$ZBX_FILES_TAR" ]]
 	then
-		tar cf $FULL_ARC -I $COMPRESS_WITH $ZBX_FILES_TAR $DB_BACKUP_DST
+		tar cf "$FULL_ARC" -I "$COMPRESS_WITH" "$ZBX_FILES_TAR" "$DB_BACKUP_DST"
 	fi
 else
 	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar"
 	if [[ "$DB_ONLY" ]]
 	then
-		tar cf $FULL_ARC $DB_BACKUP_DST
+		tar cf "$FULL_ARC" "$DB_BACKUP_DST"
 	elif [[ -f "$ZBX_FILES_TAR" ]]
 	then
-		tar cf $FULL_ARC $ZBX_FILES_TAR $DB_BACKUP_DST
+		tar cf "$FULL_ARC" "$ZBX_FILES_TAR" "$DB_BACKUP_DST"
 	fi
 fi
 
@@ -367,11 +367,11 @@ RotateOldCopies
 # Cheking and logging results
 if [[ -f "$FULL_ARC" ]]
 then
-	FULL_SIZE=`du -sh $FULL_ARC | cut -f1`
-	echo "INFO: $TIMESTAMP : Backup job success. Result file sise is $FULL_SIZE." >> $LOGFILE
+	FULL_SIZE=$(du -sh "$FULL_ARC" | cut -f1)
+	echo "INFO: $TIMESTAMP : Backup job success. Result file sise is $FULL_SIZE." >> "$LOGFILE"
 	exit 0
 else
-	echo "ERROR: $TIMESTAMP : Backup job failed, archive wasn't created." >> $LOGFILE
+	echo "ERROR: $TIMESTAMP : Backup job failed, archive wasn't created." >> "$LOGFILE"
 	exit 1
 fi
 
