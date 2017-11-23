@@ -9,7 +9,7 @@
 # two times bigger than xz. Gzip it fine too, but as bzip2, rather slow (in my case).
 #
 
-VERSION="0.5.3 (dev)"
+VERSION="0.5.3"
 
 # Current timestamp
 TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
