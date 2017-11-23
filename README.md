@@ -3,7 +3,7 @@ Zabbix Share page: https://share.zabbix.com/databases/mysql/zabbix-backup-script
 Also you can contact me with vk.com: https://vk.com/asand3r  
 This script makes simple backup of Zabbix instance. It can save to archive some directories and database (MySQL only).  
 Current stable verson:  
-<b>0.5.2</b>  
+<b>0.5.3</b>  
 
 ## TODO List
 - [x] Add autocompletion script for bash-completion  
