@@ -26,7 +26,7 @@ Usage:
 -s|--save-to		- choose location to save result archive file (default: current directory)
 -t|--temp-folder	- temp folder where will be place database dump (default: /tmp)
 -c|--compress-with	- gzip|bzip2|lbzip2|pbzip2|xz
--r|--rotation		- set copies count what we will save (default: 10)
+-r|--rotation		- set copies count what we will save (default: 10, set 'no' if rotation needn't)
 -x|--use-xtrabackup	- will use 'xtrabackup' utility to backup database
 -m|--use-mysqldump	- will use 'mysqldump' utility to backup database
 -d|--db-only		- backing up database only without Zabbix config files etc
@@ -365,7 +365,10 @@ fi
 TmpClean
 
 # Running rotation
-RotateOldCopies
+if ! [[ "$ROTATION" =~ ^[Nn][Oo]$ ]]
+then
+	RotateOldCopies
+fi
 
 # Cheking and logging results
 if [[ -f "$FULL_ARC" ]]
