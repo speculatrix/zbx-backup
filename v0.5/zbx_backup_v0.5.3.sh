@@ -265,8 +265,8 @@ function BackingUp() {
 		XTRABACKUP_PATH=$(command -v xtrabackup)
 		if [[ $? -eq 0 ]]
 		then
-			$XTRABACKUP_PATH --backup --user="$DB_USER" --password="$DB_PASS" --no-timestamp --parallel=4 --target-dir="$DB_BACKUP_DST"
-			$XTRABACKUP_PATH --prepare --user="$DB_USER" --password="$DB_PASS" --no-timestamp --apply-log --target-dir="$DB_BACKUP_DST"
+			$XTRABACKUP_PATH --backup --user="$DB_USER" --password="$DB_PASS" --no-timestamp --parallel=4 --target-dir="$DB_BACKUP_DST" 2>/dev/null 2>"$LOGFILE"
+			$XTRABACKUP_PATH --prepare --user="$DB_USER" --password="$DB_PASS" --no-timestamp --apply-log --target-dir="$DB_BACKUP_DST" 1>/dev/null 2>"$LOGFILE"
 		else
 			echo "ERROR: Cannot find 'xtrabackup' utility ($XTRABACKUP_PATH)."
 			exit 1
