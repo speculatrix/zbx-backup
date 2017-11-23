@@ -217,11 +217,13 @@ function BackingUp() {
 		# Making initial files tar archive
 		if [[ -d ${ZBX_CATALOGS[0]} ]]
 		then
-			tar cf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[0]}
+			tar cf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[0]} 2>/dev/null
+			if [[ $? -eq 2 ]]; then echo "ERROR: You have no permission to save '${ZBX_CATALOGS[0]}'"; exit 1; fi
 		else
-			echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save if." >> "$LOGFILE"
+			echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save it." >> "$LOGFILE"
 		fi
-	
+		echo "fail"
+		sleep 10	
 		# Add all other catalogs in $ZBX_CATALOGS array to initial tar archive
 		if [[ -f $ZBX_FILES_TAR ]]
 		then
@@ -229,9 +231,10 @@ function BackingUp() {
 			do
 				if [[ -d ${ZBX_CATALOGS[$i]} ]]
 				then
-					tar -rf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[$i]}
+					tar -rf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[$i]} 2>/dev/null
+					if [[ $? -eq 2 ]]; then echo "ERROR: Catalog '${ZBX_CATALOGS[$i]}' cannot be append to the archive."; exit 1; fi
 				else
-					echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save if." >> "$LOGFILE"
+					echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save it." >> "$LOGFILE"
 				fi
 			done
 		else
@@ -342,19 +345,19 @@ then
 	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar.$EXT"
 	if [[ "$DB_ONLY" ]]
 	then
-		tar cf "$FULL_ARC" -I "$COMPRESS_WITH" "$DB_BACKUP_DST"
+		tar cf "$FULL_ARC" -I "$COMPRESS_WITH" "$DB_BACKUP_DST" 2>/dev/null
 	elif [[ -f "$ZBX_FILES_TAR" ]]
 	then
-		tar cf "$FULL_ARC" -I "$COMPRESS_WITH" "$ZBX_FILES_TAR" "$DB_BACKUP_DST"
+		tar cf "$FULL_ARC" -I "$COMPRESS_WITH" "$ZBX_FILES_TAR" "$DB_BACKUP_DST" 2>/dev/null
 	fi
 else
 	FULL_ARC="$DEST/zbx_backup_$TIMESTAMP.tar"
 	if [[ "$DB_ONLY" ]]
 	then
-		tar cf "$FULL_ARC" "$DB_BACKUP_DST"
+		tar cf "$FULL_ARC" "$DB_BACKUP_DST" 2>/dev/null
 	elif [[ -f "$ZBX_FILES_TAR" ]]
 	then
-		tar cf "$FULL_ARC" "$ZBX_FILES_TAR" "$DB_BACKUP_DST"
+		tar cf "$FULL_ARC" "$ZBX_FILES_TAR" "$DB_BACKUP_DST" 2>/dev/null
 	fi
 fi
 
