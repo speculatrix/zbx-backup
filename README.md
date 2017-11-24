@@ -15,7 +15,7 @@ Now, you can use arguments in command-line, decide which program to use for back
 Also I've added much more checks, error processing, so I hope it can helps to prevent some user's errors.  
 So, main fiature - command line arguments. Now you needn't to set all variables in executable file (except ZBX_CATALOGS), you can just use arguments. Next you can see full list of them:  
 1. Now we have __'--help'__ option, which can show you simple help message with examples  
-
+![alt text](https://pp.userapi.com/c841325/v841325644/3530a/7NxSDvxeEjI.jpg)  
 2. Also, I've added __'--version'__ and __'--debug'__ options. The first one just prints script version, and the second one prints the list with result of all settings you have set at startup and exit.  
 ![alt_text](https://pp.userapi.com/c834104/v834104412/2479e/oVe0ybMtguw.jpg)  
 3. We can use different utils for comression. I've hardcoded the most popular in my opinion - __gzip, bzip2 (lbzip2, pbzip2) and xz__. Each may be set in __'--compress-with'__ option. If you will not set it, as result you will get just 'tar' file.  
