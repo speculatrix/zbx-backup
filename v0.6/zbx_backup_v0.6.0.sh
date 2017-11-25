@@ -33,6 +33,7 @@ Usage:
 -u|--db-user		- username for connection to zabbix database (must be 'root' for xtrabackup)
 -p|--db-password	- password for database user; also can be path to file with password or '-' for prompt
 -n|--db-name		- database name (default: 'zabbix')
+-e|--exclude-tables	- list of database tables to exclude from backup (has one preset: 'data')
 -h|--help		- print this help message
 -v|--version		- print version number
 --debug			- print result ingormation and exit
@@ -124,6 +125,11 @@ do
 			shift
 			shift
 			;;
+		"-e"|"--exclude-tables")
+			EXCLUDE_TABLES=$2
+			shift
+			shift
+			;;
 		"-r"|"--rotation")
 			ROTATION=$2
 			shift
@@ -153,6 +159,20 @@ if ! [[ $DB_NAME ]]; then DB_NAME="zabbix"; fi				# -n|--db-name
 if ! [[ $DEST ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi	# -s|--save-to
 if ! [[ $ROTATION ]]; then ROTATION=10; fi				# -r|--rotation
 if [[ $USE_COMPRESSION ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
+# List of Zabbix tables contains data - like history, trends etc.
+ZBX_DATA_TABLES=("history" "history_uint" "trends" "trends_uint")
+
+if [[ "$EXCLUDE_TABLES" == "data" ]]
+then	
+	EXCLUDE_TABLES=("${ZBX_DATA_TABLES[@]}")
+fi
+
+echo "Exclude tables count: ${#EXCLUDE_TABLES[@]}"
+for i in 0 1 2 3 4
+do
+	echo "Table $i: ${EXCLUDE_TABLES[$i]}"
+done
+sleep 10
 
 #
 # A lot of checks, sorry, trying to make this script more friendly
