@@ -7,6 +7,7 @@ Current stable verson:
 
 ## TODO List
 - [x] Add autocompletion script for bash-completion  
+- [ ] Separate tables backup (config or data tables)
 - [ ] Add PostgreSQL support  
 
 ## Using of v0.5
