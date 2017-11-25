@@ -159,20 +159,9 @@ if ! [[ $DB_NAME ]]; then DB_NAME="zabbix"; fi				# -n|--db-name
 if ! [[ $DEST ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi	# -s|--save-to
 if ! [[ $ROTATION ]]; then ROTATION=10; fi				# -r|--rotation
 if [[ $USE_COMPRESSION ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
+
 # List of Zabbix tables contains data - like history, trends etc.
 ZBX_DATA_TABLES=("history" "history_uint" "trends" "trends_uint")
-
-if [[ "$EXCLUDE_TABLES" == "data" ]]
-then	
-	EXCLUDE_TABLES=("${ZBX_DATA_TABLES[@]}")
-fi
-
-echo "Exclude tables count: ${#EXCLUDE_TABLES[@]}"
-for i in 0 1 2 3 4
-do
-	echo "Table $i: ${EXCLUDE_TABLES[$i]}"
-done
-sleep 10
 
 #
 # A lot of checks, sorry, trying to make this script more friendly
@@ -242,8 +231,6 @@ function BackingUp() {
 		else
 			echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save it." >> "$LOGFILE"
 		fi
-		echo "fail"
-		sleep 10	
 		# Add all other catalogs in $ZBX_CATALOGS array to initial tar archive
 		if [[ -f $ZBX_FILES_TAR ]]
 		then
@@ -268,13 +255,41 @@ function BackingUp() {
 	# If we want to use mysqldump to backup database
 	if [[ "$USE_MYSQLDUMP" ]]
 	then
+		# If excluding detected, forming --ignore-table arguments
+		if [[ "$EXCLUDE_TABLES" ]]
+		then
+			IGNORE_ARG=""
+			case "$EXCLUDE_TABLES" in
+				"data")
+					for TABLE in ${ZBX_DATA_TABLES[@]}
+					do
+						IGNORE_ARG+="--ignore-table=\"$TABLE\" "
+					done
+				;;
+				*)
+					echo "ERROR: Only 'data' supports as argument for '--exclude-tables' opyion."
+					exit 1
+				;;
+			esac
+		fi
+
 		DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
 		MYSQLDUMP_PATH=$(command -v mysqldump)
-		if [[ $? -eq 0 ]]
+		# Forming basic arguments
+		MYSQLDUMP_ARGS="--user=\"$DB_USER\" --password=\"$DB_PASS\" --databases \"$DB_NAME\" --single-transaction "
+		# Add --ignore-table if needs
+		if [[ $EXCLUDE_TABLES ]]
 		then
-			$MYSQLDUMP_PATH -u"$DB_USER" -p"$DB_PASS" --databases "$DB_NAME" --single-transaction > "$DB_BACKUP_DST"
+			MYSQLDUMP_ARGS+=$IGNORE_ARG
+		fi
+		echo "mysqldump args: $MYSQLDUMP_ARGS"
+		exit 0
+		# Running mysqldump
+		if [[ "$MYSQLDUMP_PATH" ]]
+		then
+			$MYSQLDUMP_PATH $MYSQLDUMP_ARGS > "$DB_BACKUP_DST"
 		else
-			echo "ERROR: 'mysqldump' utility not found ($MYSQLDUMP_PATH)."
+			echo "ERROR: 'mysqldump' utility not found."
 			TmpClean
 			exit 1
 		fi
