@@ -267,14 +267,17 @@ function BackingUp() {
 					done
 				;;
 				*)
-					echo "ERROR: Only 'data' supports as argument for '--exclude-tables' opyion."
-					exit 1
+					for TABLE in ${EXCLUDE_TABLES[@]}
+					do
+						IGNORE_ARG+="--ignore-table=\"$TABLE\""
+					done
 				;;
 			esac
 		fi
 
 		DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
 		MYSQLDUMP_PATH=$(command -v mysqldump)
+		
 		# Forming basic arguments
 		MYSQLDUMP_ARGS="--user=\"$DB_USER\" --password=\"$DB_PASS\" --databases \"$DB_NAME\" --single-transaction "
 		# Add --ignore-table if needs
@@ -282,12 +285,10 @@ function BackingUp() {
 		then
 			MYSQLDUMP_ARGS+=$IGNORE_ARG
 		fi
-		echo "mysqldump args: $MYSQLDUMP_ARGS"
-		exit 0
 		# Running mysqldump
 		if [[ "$MYSQLDUMP_PATH" ]]
 		then
-			$MYSQLDUMP_PATH $MYSQLDUMP_ARGS > "$DB_BACKUP_DST"
+			$MYSQLDUMP_PATH "$MYSQLDUMP_ARGS" > "$DB_BACKUP_DST"
 		else
 			echo "ERROR: 'mysqldump' utility not found."
 			TmpClean
