@@ -221,9 +221,7 @@ function BackingUp() {
 			if [[ $? -eq 2 ]]; then echo "ERROR: You have no permission to save '${ZBX_CATALOGS[0]}'"; exit 1; fi
 		else
 			echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save it." >> "$LOGFILE"
-		fi
-		echo "fail"
-		sleep 10	
+		fi	
 		# Add all other catalogs in $ZBX_CATALOGS array to initial tar archive
 		if [[ -f $ZBX_FILES_TAR ]]
 		then
