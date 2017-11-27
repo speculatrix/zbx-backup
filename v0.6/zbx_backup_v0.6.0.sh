@@ -39,6 +39,7 @@ Usage:
 -h|--help		- print this help message
 -v|--version		- print version number
 --debug			- print result ingormation and exit
+--force			- force run, if has any warnings that can be skipped
 
 Examples:
 # Making backup of Zabbix database and config files with xtrabackup. compress it with lbzip2.
@@ -140,6 +141,10 @@ do
 			DEBUG="YES"
 			shift
 			;;
+		"--force")
+			FORCE="YES"
+			shift
+			;;
 		*)
 			echo "Syntax error! Please, use '--help' to view usage examples."
 			exit 1
@@ -185,10 +190,10 @@ then
 	exit 1
 fi
 
-# Check if username and password provided by user
-if [[ ${#DB_USER} == 0 ]]
+# Check if username provided by user
+if [[ ${#DB_USER} == 0 ]] || [[ "$DB_USER" =~ ^-|-- ]] && ! [[ "$FORCE" ]]
 then
-	echo "ERROR: You must provide not Null username for database '$DB_NAME'. Use '--help' to learn how."
+	echo "WARNING: Username '$DB_USER' looks wrong (starts with '-|--' or has zero length). Use '--force' if it's OK."
 	exit 1
 fi
 
@@ -210,8 +215,12 @@ function TmpClean() {
 function BackingUp() {
 	# Cleaning TMP before starting
 	TmpClean
-
-	# If '--db-only' option not set
+	
+	# !!! Temporary workaround to not broke script options, but switch to 'case' instead 'if-elif'
+	if [[ "$USE_MYSQLDUMP" ]]; then B_UTIL="mysqldump"; else B_UTIL="xtrabackup"; fi
+	# !!!
+	
+	# If '--db-only' option not set backing up some catalogs
 	if ! [[ "$DB_ONLY" ]]
 	then
 		ZBX_FILES_TAR=$TMP/zbx_files_$TIMESTAMP.tar
@@ -231,9 +240,9 @@ function BackingUp() {
 				if [[ -d ${ZBX_CATALOGS[$i]} ]]
 				then
 					tar -rf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[$i]} 2>/dev/null
-					if [[ $? -eq 2 ]]; then echo "ERROR: Catalog '${ZBX_CATALOGS[$i]}' cannot be append to the archive."; exit 1; fi
+					if [[ $? -eq 2 ]]; then echo "ERROR: Cannot add '${ZBX_CATALOGS[$i]}' to the archive."; exit 1; fi
 				else
-					echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save it." >> "$LOGFILE"
+					echo "WARNING: $TIMESTAMP : Cannot find '${ZBX_CATALOGS[0]}' to save it." >> "$LOGFILE"
 				fi
 			done
 		else
@@ -245,62 +254,69 @@ function BackingUp() {
 
 	# Backing up database
 	# If we want to use mysqldump to backup database
-	if [[ "$USE_MYSQLDUMP" ]]
-	then
-		# If excluding detected, forming --ignore-table arguments
-		if [[ "$EXCLUDE_TABLES" ]]
-		then
-			IGNORE_ARG=""
-			case "$EXCLUDE_TABLES" in
-				"data")
-					for TABLE in ${ZBX_DATA_TABLES[@]}
-					do
-						IGNORE_ARG+="--ignore-table=\"$TABLE\" "
-					done
-				;;
-				*)
-					for TABLE in ${EXCLUDE_TABLES[@]}
-					do
-						IGNORE_ARG+="--ignore-table=\"$TABLE\""
-					done
-				;;
-			esac
-		fi
+	case "$B_UTIL" in
+		# Using mysqldump
+		"mysqldump")
+			# If excluding detected, forming --ignore-table arguments
+			if [[ "$EXCLUDE_TABLES" ]]
+			then
+				IGNORE_ARG=""
+				case "$EXCLUDE_TABLES" in
+					"data")
+						for TABLE in ${ZBX_DATA_TABLES[@]}
+						do
+							IGNORE_ARG+="--ignore-table=\"$TABLE\" "
+						done
+						;;
+					*)
+						for TABLE in ${EXCLUDE_TABLES[@]}
+						do
+							IGNORE_ARG+="--ignore-table=\"$TABLE\""
+						done
+						;;
+				esac
+			fi
 
-		DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
-		MYSQLDUMP_PATH=$(command -v mysqldump)
+			DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
+			MYSQLDUMP_PATH=$(command -v mysqldump)
 		
-		# Forming basic arguments
-		MYSQLDUMP_ARGS="--user=\"$DB_USER\" --password=\"$DB_PASS\" --databases \"$DB_NAME\" --single-transaction "
-		# Add --ignore-table if needs
-		if [[ $EXCLUDE_TABLES ]]
-		then
-			MYSQLDUMP_ARGS+=$IGNORE_ARG
-		fi
-		# Running mysqldump
-		if [[ "$MYSQLDUMP_PATH" ]]
-		then
-			$MYSQLDUMP_PATH "$MYSQLDUMP_ARGS" > "$DB_BACKUP_DST"
-		else
-			echo "ERROR: 'mysqldump' utility not found."
-			TmpClean
+			# Forming basic arguments (last space is important!)
+			MYSQLDUMP_ARGS="--user=\"$DB_USER\" --password=\"$DB_PASS\" --databases \"$DB_NAME\" --single-transaction "
+			# Add --ignore-table if needs
+			if [[ $EXCLUDE_TABLES ]]; then MYSQLDUMP_ARGS+=$IGNORE_ARG; fi
+			
+			# Running mysqldump
+			if [[ "$MYSQLDUMP_PATH" ]]
+			then
+				$MYSQLDUMP_PATH "$MYSQLDUMP_ARGS" > "$DB_BACKUP_DST"
+			else
+				echo "ERROR: 'mysqldump' utility not found."
+				TmpClean
+				exit 1
+		
+			fi
+			;;
+		# Using xtrabackup
+		"xtrabackup")
+			DB_BACKUP_DST=$TMP/zbx_mysql_files_$TIMESTAMP
+			XTRABACKUP_PATH=$(command -v xtrabackup)
+			if [[ "$XTRABACKUP_PATH" ]]
+			then
+				$XTRABACKUP_PATH --backup --user="$DB_USER" --password="$DB_PASS" \ 
+					--no-timestamp --parallel=4 --target-dir="$DB_BACKUP_DST" 2>/dev/null 2>"$LOGFILE"
+				$XTRABACKUP_PATH --prepare --user="$DB_USER" --password="$DB_PASS" \
+					--no-timestamp --apply-log --target-dir="$DB_BACKUP_DST" 1>/dev/null 2>"$LOGFILE"
+			else
+				echo "ERROR: Cannot find 'xtrabackup' utility ($XTRABACKUP_PATH)."
+				exit 1
+			fi
+			;;
+		*)
+			echo "ERROR: You've setted incorrect backup utility. Use '--help'."
 			exit 1
-		fi
-	# If we want to use xtrabackup to backup database
-	elif [[ "$USE_XTRABACKUP" ]]
-	then
-		DB_BACKUP_DST=$TMP/zbx_mysql_files_$TIMESTAMP
-		XTRABACKUP_PATH=$(command -v xtrabackup)
-		if [[ $? -eq 0 ]]
-		then
-			$XTRABACKUP_PATH --backup --user="$DB_USER" --password="$DB_PASS" --no-timestamp --parallel=4 --target-dir="$DB_BACKUP_DST" 2>/dev/null 2>"$LOGFILE"
-			$XTRABACKUP_PATH --prepare --user="$DB_USER" --password="$DB_PASS" --no-timestamp --apply-log --target-dir="$DB_BACKUP_DST" 1>/dev/null 2>"$LOGFILE"
-		else
-			echo "ERROR: Cannot find 'xtrabackup' utility ($XTRABACKUP_PATH)."
-			exit 1
-		fi
-	fi
-
+			;;
+	esac
+	
 	# Chech last exit code
 	if [[ $? -ne 0 ]]
 	then
@@ -317,7 +333,7 @@ function RotateOldCopies() {
 	OLD_COPIES=($(ls -1t "$DEST"/zbx_backup_*))
 	COUNT=${#OLD_COPIES[@]}
 
-	if [[ $COUNT -gt $ROTATION ]] && [[ $ROTATION -ne 0 ]]
+	if [[ $COUNT -gt $ROTATION ]]
 	then
 		for OLD_COPY in "${OLD_COPIES[@]:$ROTATION}"
 		do
@@ -355,7 +371,7 @@ fi
 # Running backup function
 BackingUp
 
-# Compressing if resulted files exists
+# Compressing of packing to tar if resulted files exists
 if [[ "$USE_COMPRESSION" ]]
 then
 	case $COMPRESS_WITH in
@@ -392,7 +408,7 @@ fi
 # Cleaning temp 
 TmpClean
 
-# Running rotation
+# Running rotation if needed
 if ! [[ "$ROTATION" =~ ^[Nn][Oo]$ ]]
 then
 	RotateOldCopies
@@ -409,4 +425,4 @@ else
 	exit 1
 fi
 
-exit $?
+exit 0
