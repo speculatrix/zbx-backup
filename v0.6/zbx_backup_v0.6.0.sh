@@ -15,6 +15,8 @@ VERSION="0.6.0 (dev)"
 TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
 # These catalogs will save too
 ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
+# List of Zabbix tables contains data - like history, trends etc.
+ZBX_DATA_TABLES=("history" "history_uint" "trends" "trends_uint")
 ### END Static settings ###
 
 # The function just print help message
@@ -73,14 +75,12 @@ do
 					exit 1
 					;;
 			esac
-			shift
-			shift
+			shift 2
 			;;
 		"-t"|"--temp-folder")
 			TMP=$2
 			if [[ $TMP =~ /$ ]]; then TMP=${TMP%?}; fi
-			shift
-			shift
+			shift 2
 			;;	
 		"-x"|"--use-xtrabackup")
 			USE_XTRABACKUP="YES"
@@ -90,8 +90,7 @@ do
 			DEST=$2
 			LOGFILE="$DEST/zbx_backup.log"
 			if [[ $DEST =~ /$ ]]; then DEST=${DEST%?}; LOGFILE="$DEST/zbx_backup.log"; fi
-			shift
-			shift
+			shift 2
 			;;
 		"-m"|"--use-mysqldump")
 			USE_MYSQLDUMP="YES"
@@ -103,8 +102,7 @@ do
 			;;
 		"-u"|"--db-user")
 			DB_USER=$2
-			shift
-			shift
+			shift 2
 			;;
 		"-p"|"--db-password")
 			DB_PASS=$2
@@ -117,23 +115,19 @@ do
 					exit 1
 				fi
 			fi
-			shift
-			shift
+			shift 2
 			;;
 		"-n"|"--db-name")
 			DB_NAME=$2
-			shift
-			shift
+			shift 2
 			;;
 		"-e"|"--exclude-tables")
 			EXCLUDE_TABLES=$2
-			shift
-			shift
+			shift 2
 			;;
 		"-r"|"--rotation")
 			ROTATION=$2
-			shift
-			shift
+			shift 2
 			;;
 		"-h"|"--help")
 			PrintHelpMessage
@@ -160,8 +154,6 @@ if ! [[ $DEST ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi	# -s|--sa
 if ! [[ $ROTATION ]]; then ROTATION=10; fi				# -r|--rotation
 if [[ $USE_COMPRESSION ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
 
-# List of Zabbix tables contains data - like history, trends etc.
-ZBX_DATA_TABLES=("history" "history_uint" "trends" "trends_uint")
 
 #
 # A lot of checks, sorry, trying to make this script more friendly
