@@ -280,19 +280,22 @@ function BackingUp() {
 
 			DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
 			MYSQLDUMP_PATH=$(command -v mysqldump)
-			
-			# Forming basic arguments (last space is important!)
-			MYSQLDUMP_ARGS="-u $DB_USER -p$DB_PASS --database $DB_NAME --single-transaction "
-			# Add --ignore-table if needs
-			if [[ $EXCLUDE_TABLES ]]; then MYSQLDUMP_ARGS+=$IGNORE_ARGS; fi
+			# Forming basic arguments
+			MYSQLDUMP_ARGS="-u $DB_USER -p$DB_PASS --database $DB_NAME --single-transaction"
 			
 			# Running mysqldump
 			if [[ "$MYSQLDUMP_PATH" ]]
 			then
-				# Dumping db's structure
+				# Dumping structure
 				$MYSQLDUMP_PATH $MYSQLDUMP_ARGS --no-data > "$DB_BACKUP_DST"
-				# Dump data 
-				$MYSQLDUMP_PATH $MYSQLDUMP_ARGS >> "$DB_BACKUP_DST"
+				
+				# Add --ignore-table if needs
+				if [[ $EXCLUDE_TABLES ]]
+				then
+					$MYSQLDUMP_PATH $MYSQLDUMP_ARGS $IGNORE_ARGS >> "$DB_BACKUP_DST"
+				else
+					$MYSQLDUMP_PATH $MYSQLDUMP_ARGS >> "$DB_BACKUP_DST"
+				fi
 			else
 				echo "ERROR: 'mysqldump' utility not found."
 				TmpClean
