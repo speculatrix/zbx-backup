@@ -290,9 +290,10 @@ function BackingUp() {
 				$MYSQLDUMP_PATH $MYSQLDUMP_ARGS --no-data > "$DB_BACKUP_DST"
 				
 				# Add --ignore-table if needs
-				if [[ $EXCLUDE_TABLES ]]
+				if [[ "$EXCLUDE_TABLES" ]]
 				then
-					$MYSQLDUMP_PATH $MYSQLDUMP_ARGS $IGNORE_ARGS >> "$DB_BACKUP_DST"
+					echo "$MYSQLDUMP_PATH $MYSQLDUMP_ARGS $IGNORE_ARGS" #>> "$DB_BACKUP_DST"
+					exit 0
 				else
 					$MYSQLDUMP_PATH $MYSQLDUMP_ARGS >> "$DB_BACKUP_DST"
 				fi
