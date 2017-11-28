@@ -15,8 +15,6 @@ VERSION="0.6.0 (dev)"
 TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
 # These catalogs will save too
 ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
-# List of Zabbix tables contains data - like history, trends etc.
-ZBX_DATA_TABLES=("history" "history_uint" "trends" "trends_uint")
 ### END Static settings ###
 
 # The function just print help message
@@ -251,7 +249,10 @@ function BackingUp() {
 			exit 1
 		fi
 	fi
-
+	
+	ZBX_TABLES_FILTER="^(history|acknowledges|alerts|auditlog|events|trends)"
+	MYSQL_PATH=$(command -v mysql)
+	ZBX_DATA_TABLES=($($MYSQL_PATH -u"$DB_USER"  -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | grep -P "$ZBX_TABLES_FILTER"))
 	# Backing up database
 	# If we want to use mysqldump to backup database
 	case "$B_UTIL" in
@@ -260,18 +261,18 @@ function BackingUp() {
 			# If excluding detected, forming --ignore-table arguments
 			if [[ "$EXCLUDE_TABLES" ]]
 			then
-				IGNORE_ARG=""
+				IGNORE_ARGS=""
 				case "$EXCLUDE_TABLES" in
 					"data")
-						for TABLE in ${ZBX_DATA_TABLES[@]}
+						for TABLE in "${ZBX_DATA_TABLES[@]}"
 						do
-							IGNORE_ARG+="--ignore-table=\"$TABLE\" "
+							IGNORE_ARGS+="--ignore-table=\"$DB_NAME.$TABLE\" "
 						done
 						;;
 					*)
-						for TABLE in ${EXCLUDE_TABLES[@]}
+						for TABLE in "${EXCLUDE_TABLES[@]}"
 						do
-							IGNORE_ARG+="--ignore-table=\"$TABLE\""
+							IGNORE_ARGS+="--ignore-table=\"$DB_NAME.$TABLE\" "
 						done
 						;;
 				esac
@@ -279,16 +280,19 @@ function BackingUp() {
 
 			DB_BACKUP_DST=$TMP/zbx_db_dump_$TIMESTAMP.sql
 			MYSQLDUMP_PATH=$(command -v mysqldump)
-		
+			
 			# Forming basic arguments (last space is important!)
-			MYSQLDUMP_ARGS="--user=\"$DB_USER\" --password=\"$DB_PASS\" --databases \"$DB_NAME\" --single-transaction "
+			MYSQLDUMP_ARGS="-u $DB_USER -p$DB_PASS --database $DB_NAME --single-transaction "
 			# Add --ignore-table if needs
-			if [[ $EXCLUDE_TABLES ]]; then MYSQLDUMP_ARGS+=$IGNORE_ARG; fi
+			if [[ $EXCLUDE_TABLES ]]; then MYSQLDUMP_ARGS+=$IGNORE_ARGS; fi
 			
 			# Running mysqldump
 			if [[ "$MYSQLDUMP_PATH" ]]
 			then
-				$MYSQLDUMP_PATH "$MYSQLDUMP_ARGS" > "$DB_BACKUP_DST"
+				# Dumping db's structure
+				$MYSQLDUMP_PATH $MYSQLDUMP_ARGS --no-data > "$DB_BACKUP_DST"
+				# Dump data 
+				$MYSQLDUMP_PATH $MYSQLDUMP_ARGS >> "$DB_BACKUP_DST"
 			else
 				echo "ERROR: 'mysqldump' utility not found."
 				TmpClean
@@ -362,7 +366,7 @@ then
 	printf "%-20s : %-25s\n" "Logfile location" "$LOGFILE"
 	printf "%-20s : %-25s\n" "Temp directory" "$TMP"
 	printf "%-20s : %-25s\n" "Final distination" "$DEST"
-	printf "%-20s : %-30s\n" "Zabbix catalogs" "$(join ', ' "${ZBX_CATALOGS[@]}")"
+	if ! [[ "$DB_ONLY" ]]; then printf "%-20s : %-30s\n" "Zabbix catalogs" "$(join ', ' "${ZBX_CATALOGS[@]}")"; fi
 	if [[ "$USE_MYSQLDUMP" ]]; then printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP; fi
 	if [[ "$USE_XTRABACKUP" ]]; then printf "%-20s : %-25s\n" "Use xtrabackup" $USE_XTRABACKUP; fi
 	exit 0
