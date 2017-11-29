@@ -23,19 +23,20 @@ echo "
 zbx_backup, version: $VERSION
 (c) Khatsayuk Alexander, 2017
 Usage:
+-b|--backup-with	- Utility to make DB dump (mysqldump, xtrabackup)
 -s|--save-to		- choose location to save result archive file (default: current directory)
 -t|--temp-folder	- temp folder where will be place database dump (default: /tmp)
--c|--compress-with	- gzip|bzip2|lbzip2|pbzip2|xz
+-c|--compress-with	- Compression utility to use with tar: gzip|bzip2|lbzip2|pbzip2|xz
 -r|--rotation		- set copies count what we will save (default: 10, set 'no' if rotation needn't)
--x|--use-xtrabackup	- will use 'xtrabackup' utility to backup database
--m|--use-mysqldump	- will use 'mysqldump' utility to backup database
--d|--db-only		- backing up database only without Zabbix config files etc
+-x|--use-xtrabackup	- will use 'xtrabackup' utility to backup database (DEPRECATED! Use '-b' option)
+-m|--use-mysqldump	- will use 'mysqldump' utility to backup database (DEPRECATED! Use '-b' option)
 -u|--db-user		- username for connection to zabbix database (must be 'root' for xtrabackup)
 -p|--db-password	- password for database user; also can be path to file with password or '-' for prompt
 -n|--db-name		- database name (default: 'zabbix')
 -e|--exclude-tables	- list of database tables to exclude from backup (has two presets: 'data' and 'config')
 -h|--help		- print this help message
 -v|--version		- print version number
+--db-only		- backing up database only without Zabbix config files etc
 --debug			- print result ingormation and exit
 --force			- force run, if has any warnings that can be skipped
 
@@ -76,6 +77,22 @@ do
 			esac
 			shift 2
 			;;
+		"-b"|"--backup-with")
+			B_UTIL=$2
+			case "$B_UTIL" in
+				"mdump"|"mysqldump")
+					B_UTIL="mysqldump"
+					;;
+				"xtra"|"xtrabackup")
+					B_UTIL="xtrabackup"
+					;;
+				*)
+					echo "Syntax error: [-b|--backup-with] mdump|mysqldump|xtra|xtrabackup"
+					exit 1
+					;;
+			esac
+			shift 2
+			;;
 		"-t"|"--temp-folder")
 			TMP=$2
 			if [[ $TMP =~ /$ ]]; then TMP=${TMP%?}; fi
@@ -93,10 +110,6 @@ do
 			;;
 		"-m"|"--use-mysqldump")
 			USE_MYSQLDUMP="YES"
-			shift
-			;;
-		"-d"|"--db-only")
-			DB_ONLY="YES"
 			shift
 			;;
 		"-u"|"--db-user")
@@ -135,6 +148,10 @@ do
 			echo "$VERSION"
 			exit 0
 			;;
+		"--db-only")
+			DB_ONLY="YES"
+			shift
+			;;
 		"--debug")
 			DEBUG="YES"
 			shift
@@ -151,47 +168,61 @@ do
 done
 
 # Set defaults if arguments not present
-if ! [[ $TMP ]]; then TMP="/tmp"; fi					# -t|--temp-dir
-if ! [[ $DB_NAME ]]; then DB_NAME="zabbix"; fi				# -n|--db-name
-if ! [[ $DEST ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi	# -s|--save-to
-if ! [[ $ROTATION ]]; then ROTATION=10; fi				# -r|--rotation
+if ! [[ $TMP ]]; then TMP="/tmp"; fi
+if ! [[ $DB_NAME ]]; then DB_NAME="zabbix"; fi
+if ! [[ $DEST ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi
+if ! [[ $ROTATION ]]; then ROTATION=10; fi
 if [[ $USE_COMPRESSION ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
-
 
 #
 # A lot of checks, sorry, trying to make this script more friendly
 #
 
+# Options -m|-x and -b shouldn't use together
+if [[ "$USE_MYSQLDUMP" ]] || [[ "$USE_XTRABACKUP" ]] && [[ "$B_UTIL" ]]
+then
+	echo "ERROR: You shouldn't use '-m|-x' and '-b' options together."
+	exit 1
+fi
+
+# Checking deprecated -m and -x options
+if [[ "$USE_MYSQLDUMP" ]] || [[ "$USE_XTRABACKUP" ]]
+then
+	echo "WARNING: Options '-m' and '-x' is deprecated. Please, use '-b|--backup-with' insted." | tee -a "$LOGFILE"
+	if [[ "$USE_MYSQLDUMP" ]]; then B_UTIL="mysqldump"; fi
+	if [[ "$USE_XTRABACKUP" ]]; then B_UTIL="xtrabackup"; fi
+fi 
+
 # Checking TEMP directory existing
 if ! [[ -d "$TMP" ]]
 then
-	mkdir -p $TMP
-	if [[ $? -ne 0 ]]; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi
+	if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi
 fi
 
 # Enter the password if it equal to '-'
-if  [[ $DB_PASS == "-" ]]
+if  [[ "$DB_PASS" == "-" ]]
 then
 	read -s -p "Please, enter the password for user '$DB_USER' ('$DB_NAME' database): " DB_PASS
 	echo -e "\n"
 fi
 
-# We cannot use both '-m' and '-i' options, so breaks here
-if [[ "$USE_XTRABACKUP" ]] && [[ "$USE_MYSQLDUMP" ]]
-then
-	echo "ERROR: You cannot use '-m' and '-i' options together!"
-	exit 1
-# Also we should use at least one of them
-elif ! [[ "$USE_XTRABACKUP" ]] && ! [[ "$USE_MYSQLDUMP" ]] && ! [[ "$DB_ONLY" ]]
+# We should use -b or --db-only
+if ! [[ "$B_UTIL" ]]
 then
 	echo "ERROR: You must specify at least one database backup utility. Use '--help' to learn how."
 	exit 1
 fi
 
 # Check if username provided by user
-if [[ ${#DB_USER} == 0 ]] || [[ "$DB_USER" =~ ^-|-- ]] && ! [[ "$FORCE" ]]
+if [[ "$DB_USER" ]] 
 then
-	echo "WARNING: Username '$DB_USER' looks wrong (starts with '-|--' or has zero length). Use '--force' if it's OK."
+	if [[ ${#DB_USER} == 0 ]] || [[ "$DB_USER" =~ ^-|-- ]] && ! [[ "$FORCE" ]]
+	then
+		echo "WARNING: Username '$DB_USER' looks wrong (starts with '-|--' or has zero length). Use '--force' if it's OK."
+		exit 1
+	fi
+else
+	echo "ERROR: You must provide username to connect to the database."
 	exit 1
 fi
 
@@ -203,9 +234,10 @@ fi
 function TmpClean() {
 	if [[ -d "$TMP"  ]]
 	then
-		rm -rf $TMP/zbx_*
+		rm -rf $TMP/zbx_backup_*
 	else
-		echo "WARNING: $TIMESTAMP : Cannot clean TMP directory ($TMP)." >> "$LOGFILE"
+		echo "WARNING: $TIMESTAMP : Cannot clean TMP directory ($TMP)." | tee -a "$LOGFILE"
+		
 	fi
 }
 
@@ -221,11 +253,11 @@ function BackingUp() {
 	# If '--db-only' option not set backing up some catalogs
 	if ! [[ "$DB_ONLY" ]]
 	then
-		ZBX_FILES_TAR=$TMP/zbx_files_$TIMESTAMP.tar
+		ZBX_FILES_TAR=$TMP/zbx_backup_files_$TIMESTAMP.tar
 		# Making initial files tar archive
 		if [[ -d ${ZBX_CATALOGS[0]} ]]
 		then
-			tar cf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[0]} 2>/dev/null
+			tar cf "$ZBX_FILES_TAR" "${ZBX_CATALOGS[0]}" 2>/dev/null
 			if [[ $? -eq 2 ]]; then echo "ERROR: You have no permission to save '${ZBX_CATALOGS[0]}'"; exit 1; fi
 		else
 			echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save it." >> "$LOGFILE"
@@ -237,7 +269,7 @@ function BackingUp() {
 			do
 				if [[ -d ${ZBX_CATALOGS[$i]} ]]
 				then
-					tar -rf "$ZBX_FILES_TAR" ${ZBX_CATALOGS[$i]} 2>/dev/null
+					tar -rf "$ZBX_FILES_TAR" "${ZBX_CATALOGS[$i]}" 2>/dev/null
 					if [[ $? -eq 2 ]]; then echo "ERROR: Cannot add '${ZBX_CATALOGS[$i]}' to the archive."; exit 1; fi
 				else
 					echo "WARNING: $TIMESTAMP : Cannot find '${ZBX_CATALOGS[0]}' to save it." >> "$LOGFILE"
@@ -245,33 +277,45 @@ function BackingUp() {
 			done
 		else
 			echo "ERROR: Cannot create TAR archive ($ZBX_FILES_TAR) with data files."
-			TmpClean
-			exit 1
+			return 1
 		fi
 	fi
 	
 	# Filter to grep Zabbix table. Uses to form data and config tables arrays.
 	ZBX_TABLES_FILTER="^(history|acknowledges|alerts|auditlog|events|trends)"
-	MYSQL_PATH=$(command -v mysql)
+	
 	# Backing up database
-	# If we want to use mysqldump to backup database
 	case "$B_UTIL" in
 		# Using mysqldump
 		"mysqldump")
+			# Common mysql variables
+			MYSQL_PATH=$(command -v mysql)
+			MDUMP_PATH=$(command -v mysqldump)
+			MYSQL_AUTH="-u ${DB_USER} -p${DB_PASS} ${DB_NAME}"
+			DB_DUMP=$TMP/zbx_backup_db_dump_${TIMESTAMP}.sql
+			
+			# Dumping DB structure
+			if [[ "$MDUMP_PATH" ]] && [[ "$MYSQL_PATH" ]]
+			then
+				$MDUMP_PATH "${MYSQL_AUTH}" --no-data > "$DB_DUMP"
+			else
+				echo "ERROR: 'mysqldump' or 'mysql' utility not found." | tee -a "$LOGFILE"
+				return 1
+			fi
+			
 			# If excluding detected, forming --ignore-table arguments
 			if [[ "$EXCLUDE_TABLES" ]]
 			then
-				IGNORE_ARGS=""
 				case "$EXCLUDE_TABLES" in
 					"data")
-						ZBX_DATA_TABLES=($($MYSQL_PATH -B --disable-column-names -u "$DB_USER" -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | grep -P "$ZBX_TABLES_FILTER"))
+						ZBX_DATA_TABLES=($($MYSQL_PATH "${MYSQL_AUTH}" --batch --disable-column-names -e "SHOW TABLES;" | grep -P "$ZBX_TABLES_FILTER"))
 						for TABLE in "${ZBX_DATA_TABLES[@]}"
 						do
 							IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
 						done
 						;;
 					"config")
-						ZBX_CFG_TABLES=($($MYSQL_PATH -B --disable-column-names -u "$DB_USER"  -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | grep -vP "$ZBX_TABLES_FILTER"))
+						ZBX_CFG_TABLES=($($MYSQL_PATH "${MYSQL_AUTH}" --batch --disable-column-names -e "SHOW TABLES;" | grep -vP "$ZBX_TABLES_FILTER"))
 						for TABLE in "${ZBX_CFG_TABLES[@]}"
 						do
 							IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
@@ -279,67 +323,39 @@ function BackingUp() {
 						;;
 					*)
 						
-						for TABLE in ${EXCLUDE_TABLES[@]}
+						for TABLE in "${EXCLUDE_TABLES[@]}"
 						do
 							IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
 						done
 						;;
 				esac
-			fi
-
-			DB_BACKUP_DST=$TMP/zbx_db_dump_${TIMESTAMP}.sql
-			MDUMP_PATH=$(command -v mysqldump)
-			# Forming basic arguments
-			MDUMP_ARGS="-u ${DB_USER} -p${DB_PASS} --database ${DB_NAME} --single-transaction"
-			
-			# Running mysqldump
-			if [[ "$MDUMP_PATH" ]]
-			then
-				# Dumping structure
-				$MDUMP_PATH ${MDUMP_ARGS} --no-data > "$DB_BACKUP_DST"
-				
-				# Add --ignore-table if needs
-				if [[ "$EXCLUDE_TABLES" ]]
-				then
-					$MDUMP_PATH ${MDUMP_ARGS} --no-create-info ${IGNORE_ARGS%?} >> "$DB_BACKUP_DST"
-				else
-					$MDUMP_PATH ${MDUMP_ARGS} >> "$DB_BACKUP_DST"
-				fi
+				# Writing data with exclusions to dump
+				$MDUMP_PATH "${MYSQL_AUTH}" --single-transaction --no-create-info "${IGNORE_ARGS%?}" >> "$DB_DUMP"
 			else
-				echo "ERROR: 'mysqldump' utility not found." | tee -a "$LOGFILE"
-				TmpClean
-				exit 1
-		
+				# Writing full data to dump
+				$MDUMP_PATH "${MYSQL_AUTH}" --single-transaction >> "$DB_DUMP"
 			fi
 			;;
 		# Using xtrabackup
 		"xtrabackup")
-			DB_BACKUP_DST=$TMP/zbx_mysql_files_$TIMESTAMP
+			DB_BACKUP_DST=$TMP/zbx_backup_mysql_files_$TIMESTAMP
 			XTRABACKUP_PATH=$(command -v xtrabackup)
 			if [[ "$XTRABACKUP_PATH" ]]
 			then
-				$XTRABACKUP_PATH --backup --user="$DB_USER" --password="$DB_PASS" \ 
-					--no-timestamp --parallel=4 --target-dir="$DB_BACKUP_DST" 2>/dev/null 2>"$LOGFILE"
+				$XTRABACKUP_PATH --backup --user="$DB_USER" --password="$DB_PASS" \
+					--no-timestamp --parallel=4 --target-dir="$DB_BACKUP_DST" 1>/dev/null 2>"$LOGFILE"
 				$XTRABACKUP_PATH --prepare --user="$DB_USER" --password="$DB_PASS" \
 					--no-timestamp --apply-log --target-dir="$DB_BACKUP_DST" 1>/dev/null 2>"$LOGFILE"
 			else
-				echo "ERROR: Cannot find 'xtrabackup' utility ($XTRABACKUP_PATH)."
-				exit 1
+				echo "ERROR: Cannot find 'xtrabackup' utility ($XTRABACKUP_PATH)." | tee -a "$LOGFILE"
+				return 1
 			fi
 			;;
 		*)
 			echo "ERROR: You've setted incorrect backup utility. Use '--help'."
-			exit 1
+			return 1
 			;;
 	esac
-	
-	# Chech last exit code
-	if [[ $? -ne 0 ]]
-	then
-		echo "ERROR: $TIMESTAMP : Cannot create database backup" >> "$LOGFILE"
-		TmpClean
-		return 1
-	fi
 }
 
 
@@ -378,16 +394,19 @@ then
 	printf "%-20s : %-25s\n" "Logfile location" "$LOGFILE"
 	printf "%-20s : %-25s\n" "Temp directory" "$TMP"
 	printf "%-20s : %-25s\n" "Final distination" "$DEST"
+	printf "%-20s : %-25s\n" "Backup utility" "$B_UTIL"
 	if ! [[ "$DB_ONLY" ]]; then printf "%-20s : %-30s\n" "Zabbix catalogs" "$(join ', ' "${ZBX_CATALOGS[@]}")"; fi
 	if [[ "$EXCLUDE_TABLES" ]]; then printf "%-20s : %-30s\n" "Exclude tables" "$EXCLUDE_TABLES"; fi
-	if [[ "$USE_MYSQLDUMP" ]]; then printf "%-20s : %-25s\n" "Use mysqldump" $USE_MYSQLDUMP; fi
-	if [[ "$USE_XTRABACKUP" ]]; then printf "%-20s : %-25s\n" "Use xtrabackup" $USE_XTRABACKUP; fi
 	exit 0
 fi
 
 # Running backup function
-BackingUp
-
+if ! BackingUp;
+then
+	echo "ERROR: $TIMESTAMP : Cannot create database backup" | tee -a "$LOGFILE"
+	TmpClean
+	exit 1
+fi
 # Compressing of packing to tar if resulted files exists
 if [[ "$USE_COMPRESSION" ]]
 then
