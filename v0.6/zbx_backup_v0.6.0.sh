@@ -250,10 +250,9 @@ function BackingUp() {
 		fi
 	fi
 	
+	# Filter to grep Zabbix table. Uses to form data and config tables arrays.
 	ZBX_TABLES_FILTER="^(history|acknowledges|alerts|auditlog|events|trends)"
 	MYSQL_PATH=$(command -v mysql)
-	ZBX_DATA_TABLES=($($MYSQL_PATH -B --disable-column-names -u"$DB_USER"  -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | grep -P "$ZBX_TABLES_FILTER"))
-	ZBX_CFG_TABLES=($($MYSQL_PATH -B --disable-column-names -u"$DB_USER"  -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | grep -vP "$ZBX_TABLES_FILTER"))
 	# Backing up database
 	# If we want to use mysqldump to backup database
 	case "$B_UTIL" in
@@ -265,12 +264,14 @@ function BackingUp() {
 				IGNORE_ARGS=""
 				case "$EXCLUDE_TABLES" in
 					"data")
+						ZBX_DATA_TABLES=($($MYSQL_PATH -B --disable-column-names -u "$DB_USER" -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | grep -P "$ZBX_TABLES_FILTER"))
 						for TABLE in "${ZBX_DATA_TABLES[@]}"
 						do
 							IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
 						done
 						;;
 					"config")
+						ZBX_CFG_TABLES=($($MYSQL_PATH -B --disable-column-names -u "$DB_USER"  -p"$DB_PASS" -D "$DB_NAME" -e "SHOW TABLES;" | grep -vP "$ZBX_TABLES_FILTER"))
 						for TABLE in "${ZBX_CFG_TABLES[@]}"
 						do
 							IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
