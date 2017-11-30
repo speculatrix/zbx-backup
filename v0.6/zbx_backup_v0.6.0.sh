@@ -9,7 +9,7 @@
 # two times bigger than xz. Gzip it fine too, but as bzip2, rather slow (in my case).
 #
 
-VERSION="0.6.0 (dev)"
+VERSION="0.6"
 
 # Current timestamp
 TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
@@ -23,10 +23,10 @@ echo "
 zbx_backup, version: $VERSION
 (c) Khatsayuk Alexander, 2017
 Usage:
--b|--backup-with	- Utility to make DB dump: mysqldump, xtrabackup
+-b|--backup-with	- utility to make DB dump: mysqldump, xtrabackup
 -s|--save-to		- choose location to save result archive file (default: current directory)
--t|--temp-folder	- temp folder where will be place database dump (default: /tmp)
--c|--compress-with	- Compression utility to use with tar: gzip|bzip2|lbzip2|pbzip2|xz
+-t|--temp-folder	- temp folder where will be placed database dump (default: /tmp)
+-c|--compress-with	- compression utility to use with tar: gzip|bzip2|lbzip2|pbzip2|xz
 -r|--rotation		- set copies count what we will save (default: 10, set 'no' if rotation needn't)
 -x|--use-xtrabackup	- will use 'xtrabackup' utility to backup database (DEPRECATED! Use '-b' option)
 -m|--use-mysqldump	- will use 'mysqldump' utility to backup database (DEPRECATED! Use '-b' option)
@@ -36,8 +36,8 @@ Usage:
 -e|--exclude-tables	- list of database tables to exclude from backup (has two presets: 'data' and 'config')
 -h|--help		- print this help message
 -v|--version		- print version number
---db-only		- backing up database only without Zabbix config files etc
---debug			- print result ingormation and exit
+--db-only		- backing up database only without Zabbix config files
+--debug			- print result information and exit
 --force			- force run, if has any warnings that can be skipped
 
 Examples:
@@ -47,6 +47,8 @@ zbx_backup --compress-with lbzip2 --use-xtrabackup --db-user root --db-password 
 zbx_backup --compress-with gzip --use-mysqldump --db-user zabbix --db-password /root/.mysql --db-name zabbix_database
 # Making backup of Zabbix database only and compress it with xz utility.
 zbx_backup --compress-with xz --db-only -u root -p P@ssw0rd
+# Making backup of Zabbux database with all data tables exclusion:
+zbx_backup --backup-with mysqldump --db-user root --db-pass P@ssw0rd --exclude-tables data --compress-with gzip
 
 More on GitHub (https://github.com/asand3r/zbx_backup)
 "
@@ -54,12 +56,8 @@ exit 0
 }
 
 # Parsing given arguments
-if [[ $# -eq 0 ]]
-then
-	PrintHelpMessage
-fi
+if [[ $# -eq 0 ]]; then PrintHelpMessage; fi
 
-# Ooh, it makes me mad. I've almost get it, but my pythoted brain refuses constructions like this. %)
 while [[ $# -gt 0 ]]
 do
 	ARG="$1"
@@ -196,17 +194,10 @@ fi
 # !!! DELETE IN 0.6.1 RELEASE !!!
 
 # Check '-b' option is provided
-if ! [[ "$B_UTIL"  ]]
-then
-	echo "ERROR: You must provide backup utility ('-b')."
-	exit 1
-fi
+if ! [[ "$B_UTIL"  ]]; then echo "ERROR: You must provide backup utility ('-b')."; exit 1; fi
 
 # Checking TEMP directory existing
-if ! [[ -d "$TMP" ]]
-then
-	if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi
-fi
+if ! [[ -d "$TMP" ]]; then if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi; fi
 
 # Enter the password if it equal to '-'
 if  [[ "$DB_PASS" == "-" ]]
@@ -236,22 +227,22 @@ fi
 function TmpClean() {
 	if [[ -d "$TMP"  ]]
 	then
-		rm -rf $TMP/zbx_backup_*
+		rm -rf $TMP/zbx_backup_* 2>>"$LOGFILE"
+		return 0
 	else
-		echo "WARNING: $TIMESTAMP : Cannot clean TMP directory ($TMP)." | tee -a "$LOGFILE"
-		
+		echo "WARNING: $TIMESTAMP : '$TMP' directory not found." | tee -a "$LOGFILE"
+		return 1
 	fi
 }
 
 # The function makes all backup operations
 function BackingUp() {
-	# Cleaning TMP before starting
+	# Cleaning TMP
 	TmpClean
-	
 	# If '--db-only' option not set backing up some catalogs
 	if ! [[ "$DB_ONLY" ]]
 	then
-		ZBX_FILES_TAR=$TMP/zbx_backup_files_$TIMESTAMP.tar
+		ZBX_FILES_TAR=$TMP/zbx_backup_files_${TIMESTAMP}.tar
 		# Making initial files tar archive
 		if [[ -d ${ZBX_CATALOGS[0]} ]]
 		then
@@ -341,7 +332,7 @@ function BackingUp() {
 			then
 				echo "WARNING: Cannot use tables exclusion with xtrabackup yet. Full backup will be made." | tee -a "$LOGFILE"
 			fi
-			DB_DUMP=$TMP/zbx_backup_mysql_files_$TIMESTAMP
+			DB_DUMP=$TMP/zbx_backup_mysql_files_${TIMESTAMP}
 			XTRABACKUP_PATH=$(command -v xtrabackup)
 			if [[ "$XTRABACKUP_PATH" ]]
 			then
@@ -404,12 +395,13 @@ then
 fi
 
 # Running backup function
-if ! BackingUp;
+if ! BackingUp
 then
-	echo "ERROR: $TIMESTAMP : Cannot create database backup" | tee -a "$LOGFILE"
-	TmpClean
-	exit 1
+		echo "ERROR: $TIMESTAMP : Cannot create database backup" | tee -a "$LOGFILE"
+		TmpClean
+		exit 1
 fi
+
 # Compressing of packing to tar if resulted files exists
 if [[ "$USE_COMPRESSION" ]]
 then
@@ -448,10 +440,7 @@ fi
 TmpClean
 
 # Running rotation if needed
-if ! [[ "$ROTATION" =~ ^[Nn][Oo]$ ]]
-then
-	RotateOldCopies
-fi
+if ! [[ "$ROTATION" =~ ^[Nn][Oo]$ ]]; then RotateOldCopies; fi
 
 # Cheking and logging results
 if [[ -f "$FULL_ARC" ]]
