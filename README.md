@@ -7,7 +7,7 @@ Current stable verson:
 
 ## Main features
 - Dumps the database with two ways;
-- Can exclude some tables in the database;
+- Can exclude tables in the database (mysqldump only);
 - Saves pointed catalogs of filesystem;
 - Writes errors to logfile;
 - Configurable old copies rotation;
@@ -34,7 +34,7 @@ Full arguments list:
 8. Since v0.6 I've replace '-x' and '-m' options with one '-b|--backup-with' which sets backup utility - mysqldump or xtrabackup. Old option saved to compability, but you shouldn't you it anymore.
 8. Option __'--save-to'__ sets location where will be saved final archive file. It has default value: current folder.  
 9. Option __'--temp-folder'__ sets folder for temporary files. It's nessecery and must be ready to accept all MySQL data for all saving procedure time. It has default value: /tmp.
-10. Option '--exclude-tables' can be use to exclude some tables from database backup. It has two present: 'data' and 'config'. The first excludes all zabbix large tables, contains data like 'history' and 'trends' (15 total in Zabbix 3.4), and the second saves all other tabases. Tables list forming dynamically with next regular expression:  
+10. Option '--exclude-tables' can be use to exclude some tables from database backup (supports only mysqldump). It has two present: 'data' and 'config'. The first excludes all zabbix large tables, contains data like 'history' and 'trends' (15 total in Zabbix 3.4), and the second saves all other tabases. Tables list forming dynamically with next regular expression:  
 ```bash
 "^(history|acknowledges|alerts|auditlog|events|trends)"
 ```
