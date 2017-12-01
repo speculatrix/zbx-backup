@@ -1,7 +1,7 @@
 # zbx_backup
 Zabbix Share page: https://share.zabbix.com/databases/mysql/zabbix-backup-script  
-Also you can contact me with vk.com or Telegram: https://vk.com/asand3r  @asand3r
-This script makes simple backup of Zabbix instance. It can save to archive some directories and database (MySQL only).  
+Also you can contact me with vk.com or Telegram: https://vk.com/asand3r  @asand3r  
+This script makes simple backup of Zabbix instance.  
 Current stable verson:  
 <b>0.6</b>  
 
