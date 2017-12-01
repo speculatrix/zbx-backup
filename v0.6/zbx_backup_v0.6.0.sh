@@ -196,9 +196,10 @@ fi
 # Check '-b' option is provided
 if ! [[ "$B_UTIL"  ]]; then echo "ERROR: You must provide backup utility ('-b')."; exit 1; fi
 
-# Checking TEMP directory existing
+# Checking TMP and DST directories existing
 if ! [[ -d "$TMP" ]]; then if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi; fi
-
+if ! [[ -d "$DEST" ]]; then echo "ERROR: Destination directory doesn't exists." | tee -a "$LOGFILE"; fi
+ 
 # Enter the password if it equal to '-'
 if  [[ "$DB_PASS" == "-" ]]
 then
@@ -242,18 +243,15 @@ function BackingUp() {
 	# If '--db-only' option not set backing up some catalogs
 	if ! [[ "$DB_ONLY" ]]
 	then
+		# Result TAR file with configs
 		ZBX_FILES_TAR=$TMP/zbx_backup_files_${TIMESTAMP}.tar
-		# Making initial files tar archive
 		if [[ -d ${ZBX_CATALOGS[0]} ]]
 		then
+			# Making initial files tar archive
 			tar cf "$ZBX_FILES_TAR" "${ZBX_CATALOGS[0]}" 2>/dev/null
+			# Exit if tar fails
 			if [[ $? -eq 2 ]]; then echo "ERROR: You have no permission to save '${ZBX_CATALOGS[0]}'"; exit 1; fi
-		else
-			echo "WARNING: $TIMESTAMP : Cannot find catalog ${ZBX_CATALOGS[0]} to save it." >> "$LOGFILE"
-		fi
-		# Add all other catalogs in $ZBX_CATALOGS array to initial tar archive
-		if [[ -f $ZBX_FILES_TAR ]]
-		then
+			# Add other catalogs to archive
 			for (( i=1; i < ${#ZBX_CATALOGS[@]}; i++ ))
 			do
 				if [[ -d ${ZBX_CATALOGS[$i]} ]]
@@ -261,12 +259,11 @@ function BackingUp() {
 					tar -rf "$ZBX_FILES_TAR" "${ZBX_CATALOGS[$i]}" 2>/dev/null
 					if [[ $? -eq 2 ]]; then echo "ERROR: Cannot add '${ZBX_CATALOGS[$i]}' to the archive."; exit 1; fi
 				else
-					echo "WARNING: $TIMESTAMP : Cannot find '${ZBX_CATALOGS[0]}' to save it." >> "$LOGFILE"
+					echo "WARNING: $TIMESTAMP : Cannot find '${ZBX_CATALOGS[$i]}' to save it." >> "$LOGFILE"
 				fi
 			done
 		else
-			echo "ERROR: Cannot create TAR archive ($ZBX_FILES_TAR) with data files."
-			return 1
+			echo "ERROR: Cannot create TAR archive '$ZBX_FILES_TAR'." | tee -a "$LOGFILE"
 		fi
 	fi
 	
