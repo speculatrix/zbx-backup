@@ -31,10 +31,10 @@ Full arguments list:
 5. Added __'--rotation'__ option. It can be used to redefine default old copies count. It has default value: 10. Also, you can set it to __'no'__ to disable rotation.  
 6. Next three options set your connection to MySQL database, it's __'--db-name'__, __'--db-user'__ and __'--db-password'__. I don't think that they need to be explained. One thing - '--db-name' has default value: __'zabbix'__, so may be skipped.
 7. __DEPECATED! You should use --backup-with option__ Options __'--use-mysqldump'__ and __'--use-xtrabackup'__ give you choise which utility to use for database backup. Using of xtrabackup will save all of your MySQL server instance, but mysqldump will save Zabbix server database only. One more thing that you should know - backup file created with mysqldump smaller than with xtrabackup (maybe for 3 to 4 times).  
-8. Since v0.6 I've replace '-x' and '-m' options with one '-b|--backup-with' which sets backup utility - mysqldump or xtrabackup. Old option saved to compability, but you shouldn't you it anymore.
-8. Option __'--save-to'__ sets location where will be saved final archive file. It has default value: current folder.  
-9. Option __'--temp-folder'__ sets folder for temporary files. It's nessecery and must be ready to accept all MySQL data for all saving procedure time. It has default value: /tmp.
-10. Option '--exclude-tables' can be use to exclude some tables from database backup (supports only mysqldump). It has two present: 'data' and 'config'. The first excludes all zabbix large tables, contains data like 'history' and 'trends' (15 total in Zabbix 3.4), and the second saves all other tabases. Tables list forming dynamically with next regular expression:  
+8. Option __'-b|--backup-with'__ replaced '-x' and '-m' in v0.6. It should be useed to set backup utility - mysqldump or xtrabackup. Old option saved to compability, but you shouldn't use it anymore.
+8. Option __'--save-to'__ sets location where will be saved final archive file. By default, it's use current folder.  
+9. Option __'--temp-folder'__ sets folder for temporary files. It's nessecery and must be ready to accept all MySQL data for all saving procedure time. Default value: /tmp.
+10. Option __'--exclude-tables'__ can be used to exclude some tables from database backup (only with mysqldump). It has two preset: 'data' and 'config'. The first excludes all zabbix large tables, contains data - like 'history' and 'trends' (15 total in Zabbix 3.4), and the second saves all other tabases. Tables list forming dynamically with next regular expression:  
 ```bash
 "^(history|acknowledges|alerts|auditlog|events|trends)"
 ```
