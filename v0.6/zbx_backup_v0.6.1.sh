@@ -176,29 +176,12 @@ if [[ "$USE_COMPRESSION" ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo
 # A lot of checks, trying to make this script more friendly
 #
 
-# !!! DELETE IN 0.6.1 RELEASE !!!
-# Options -m|-x and -b shouldn't use together
-if [[ "$USE_MYSQLDUMP" ]] || [[ "$USE_XTRABACKUP" ]] && [[ "$B_UTIL" ]]
-then
-	echo "ERROR: You shouldn't use '-m|-x' and '-b' options together."
-	exit 1
-fi
-
-# Checking deprecated -m and -x options
-if [[ "$USE_MYSQLDUMP" ]] || [[ "$USE_XTRABACKUP" ]]
-then
-	echo "WARNING: Options '-m' and '-x' are deprecated and will be delete in v0.6.1. Please, use '-b|--backup-with' instead." | tee -a "$LOGFILE"
-	if [[ "$USE_MYSQLDUMP" ]]; then B_UTIL="mysqldump"; fi
-	if [[ "$USE_XTRABACKUP" ]]; then B_UTIL="xtrabackup"; fi
-fi 
-# !!! DELETE IN 0.6.1 RELEASE !!!
-
 # Check '-b' option is provided
 if ! [[ "$B_UTIL"  ]]; then echo "ERROR: You must provide backup utility ('-b')."; exit 1; fi
 
 # Checking TMP and DST directories existing
 if ! [[ -d "$TMP" ]]; then if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi; fi
-if ! [[ -d "$DEST" ]]; then echo "ERROR: Destination directory doesn't exists." | tee -a "$LOGFILE"; fi
+if ! [[ -d "$DEST" ]]; then echo "ERROR: $TIMESTAMP : Destination directory doesn't exists." | tee -a "./zbx_backup.log"; exit 1; fi
  
 # Enter the password if it equal to '-'
 if  [[ "$DB_PASS" == "-" ]]
