@@ -195,9 +195,9 @@ fi
 if ! [[ "$B_UTIL"  ]]; then echo "ERROR: You must provide backup utility ('-b')."; exit 1; fi
 
 # Checking TMP and DST directories existing
-if ! [[ -d "$TMP" ]]; then if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi; fi
-if ! [[ -d "$DEST" ]]; then echo "ERROR: Destination directory doesn't exists." | tee -a "$LOGFILE"; fi
- 
+if ! [[ -d "$TMP" ]]; then if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory '$TMP'."; exit 1; fi; fi
+if ! [[ -d "$DEST" ]]; then echo "ERROR: $TIMESTAMP : Destination directory doesn't exist." | tee -a "./zbx_backup.log"; exit 1; fi
+
 # Enter the password if it equal to '-'
 if  [[ "$DB_PASS" == "-" ]]
 then
