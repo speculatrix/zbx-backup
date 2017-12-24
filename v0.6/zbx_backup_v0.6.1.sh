@@ -41,10 +41,12 @@ Usage:
 --force			- force run, if has any warnings that can be skipped
 
 Examples:
-# Making database backup and config files with xtrabackup and compress it with lbzip2:
-zbx_backup --backup-with xtrabackup --compress-with lbzip2 --db-user root --db-password P@ssw0rd
-# Making database backup and config files with mysqldump, password gets from the file, compress it with gzip:
-zbx_backup --backup-with mysqldump --compress-with gzip --db-user zabbix --db-password /root/.mysql
+# Making backup of Zabbix database and config files with xtrabackup. compress it with lbzip2.
+zbx_backup --compress-with lbzip2 --use-xtrabackup --db-user root --db-password P@ssw0rd
+# Making backup of Zabbix database and config files with xtrabackup. compress it with lbzip2.
+zbx_backup --compress-with gzip --use-mysqldump --db-user zabbix --db-password /root/.mysql --db-name zabbix_database
+# Making backup of Zabbix database only and compress it with xz utility.
+zbx_backup --compress-with xz --db-only -u root -p P@ssw0rd
 # Making backup of Zabbux database with all data tables exclusion:
 zbx_backup --backup-with mysqldump --db-user root --db-pass P@ssw0rd --exclude-tables data --compress-with gzip
 
@@ -174,35 +176,13 @@ if [[ "$USE_COMPRESSION" ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo
 # A lot of checks, trying to make this script more friendly
 #
 
-# !!! DELETE IN 0.6.1 RELEASE !!!
-# Options -m|-x and -b shouldn't use together
-if [[ "$USE_MYSQLDUMP" ]] || [[ "$USE_XTRABACKUP" ]] && [[ "$B_UTIL" ]]
-then
-	echo "ERROR: You shouldn't use '-m|-x' and '-b' options together."
-	exit 1
-fi
-
-# Checking deprecated -m and -x options
-if [[ "$USE_MYSQLDUMP" ]] || [[ "$USE_XTRABACKUP" ]]
-then
-	echo "WARNING: Options '-m' and '-x' are deprecated and will be delete in v0.6.1. Please, use '-b|--backup-with' instead." | tee -a "$LOGFILE"
-	if [[ "$USE_MYSQLDUMP" ]]; then B_UTIL="mysqldump"; fi
-	if [[ "$USE_XTRABACKUP" ]]; then B_UTIL="xtrabackup"; fi
-fi 
-# !!! DELETE IN 0.6.1 RELEASE !!!
-
 # Check '-b' option is provided
 if ! [[ "$B_UTIL"  ]]; then echo "ERROR: You must provide backup utility ('-b')."; exit 1; fi
 
 # Checking TMP and DST directories existing
-<<<<<<< HEAD:v0.6/zbx_backup_v0.6.sh
-if ! [[ -d "$TMP" ]]; then if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory '$TMP'."; exit 1; fi; fi
-if ! [[ -d "$DEST" ]]; then echo "ERROR: $TIMESTAMP : Destination directory doesn't exist." | tee -a "./zbx_backup.log"; exit 1; fi
-
-=======
 if ! [[ -d "$TMP" ]]; then if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi; fi
-if ! [[ -d "$DEST" ]]; then echo "ERROR: $TIMESTAMP : Destination directory doesn't exists." | tee -a "./zbx_backup.log"; exit 1; fi 
->>>>>>> DEV:v0.6/zbx_backup_v0.6.sh
+if ! [[ -d "$DEST" ]]; then echo "ERROR: $TIMESTAMP : Destination directory doesn't exists." | tee -a "./zbx_backup.log"; exit 1; fi
+ 
 # Enter the password if it equal to '-'
 if  [[ "$DB_PASS" == "-" ]]
 then
