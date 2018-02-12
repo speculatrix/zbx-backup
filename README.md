@@ -3,19 +3,19 @@ Zabbix Share page: https://share.zabbix.com/databases/mysql/zabbix-backup-script
 Also you can contact me with vk.com or Telegram: https://vk.com/asand3r  @asand3r  
 This script makes simple backup of Zabbix instance.  
 Current stable verson:  
-<b>0.6</b>  
+<b>0.6.1</b>  
 
 ## Main features
-- Dumps the database with two ways;
-- Can exclude tables in the database (mysqldump only);
-- Saves pointed catalogs of filesystem;
-- Writes errors to logfile;
-- Configurable old copies rotation;
-- Final result compression with couple of utilities  
+- Database backup with mysqldump or Percona Xtrabackup;  
+- Exclude database tables (mysqldump only);  
+- Add some catalogs to the backup files (hardcoded);  
+- Write logile;  
+- Old copies rotation;  
+- Final result compression with couple of utilities;  
+- Autocompletion script for bash-completion;  
+- Separate tables backup (config or data tables).  
 
 ## TODO List
-- [x] Add autocompletion script for bash-completion  
-- [x] Separate tables backup (config or data tables)
 - [ ] Add PostgreSQL support  
 
 ## Usage of current stable
