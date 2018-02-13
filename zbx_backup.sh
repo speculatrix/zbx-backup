@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# This script can help you to create backup of simple Zabbix instance.
-# It makes tar archives of config and scripts directories. Also it makes MySQL backup with
-# Percona Xtrabackup utility (xtrabackup) whitch you should install yourself.
-# After all it makes compressed archive contains all collected data using gzip, bzip2 or xz.
-# After a few tests I reccomend to use lbzip2. It makes archive faster, but almost
-# two times bigger than xz. Gzip it fine too, but as bzip2, rather slow (in my case).
+# The script can help you to create backup of simple Zabbix instance.
+# It makes tar archives of config and scripts directories, MySQL database backup with
+# mysqldump or Percona Xtrabackup. After all it compress collected data with gzip, bzip2 or xz.
+# After a few tests I reccomend to use lbzip2. It makes archive faster.
+# Gzip it fine too, but as bzip2, rather slow (in my case).
 #
 
 VERSION="0.6.1"

@@ -1,7 +1,7 @@
 # zbx_backup
+The __zbx_backup__ is bash-script which can help you to create backup of Zabbix Server instance.  
 Zabbix Share page: https://share.zabbix.com/databases/mysql/zabbix-backup-script  
-Also you can contact me with vk.com or Telegram: https://vk.com/asand3r  @asand3r  
-This script makes simple backup of Zabbix instance.  
+If you have any remark, you can contact me with Telegram @asand3r.  
 Current stable verson:  
 <b>0.6.1</b>  
 
