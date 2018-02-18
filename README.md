@@ -1,5 +1,5 @@
-# zbx_backup
-The __zbx_backup__ is bash-script which can help you to create backup of Zabbix Server instance.  
+# zbx-backup
+The __zbx-backup__ is bash-script which can help you to create backup of Zabbix Server instance.  
 Zabbix Share page: https://share.zabbix.com/databases/mysql/zabbix-backup-script  
 If you have any remark, you can contact me with Telegram @asand3r.  
 Current stable verson:  
@@ -41,14 +41,14 @@ Except two presets you can set tables list manually, just enter their names to o
 
 Each argument has short version of itself, you can find notice it in '--help'. So, most short usage example can looks like that:  
 ```bash
-root@server:~# zbx_backup -b mysqldump -u root -p P@ssw0rd
+root@server:~# zbx-backup -b mysqldump -u root -p P@ssw0rd
 ```
-It will use 'mysqldump' utility and connect to MySQL database with root/P@ssw0rd credentials. As result you will get tar archive contains zabbix database and config files. The file will named with template __'zbx_backup_dd.mm.yyyy.hhmmss.tar'__.
+It will use 'mysqldump' utility and connect to MySQL database with root/P@ssw0rd credentials. As result you will get tar archive contains zabbix database and config files. The file will named with template __'zbx-backup_dd.mm.yyyy.hhmmss.tar'__.
 
 ## Autocompletion
-There is the folder 'bash_completion.d' contains 'zbx_backup.bash' file. You can place it to folder /etc/bash_completion.d (if you have 'bash-completion' packet installed) and source it:  
+There is the folder 'bash_completion.d' contains 'zbx-backup.bash' file. You can place it to folder /etc/bash_completion.d (if you have 'bash-completion' packet installed) and source it:  
 ```bash
-root@server:~# . /etc/bash_completion.d/zbx_backup.bash
+root@server:~# . /etc/bash_completion.d/zbx-backup.bash
 ```
-After this you can find simple autocompletion with TAB (you must place executable file somewhere where $PATH will find it and should name it as 'zbx_backup'; for example, I've placed it to /usr/local/bin)  
+After this you can find simple autocompletion with TAB (you must place executable file somewhere where $PATH will find it and should name it as 'zbx-backup'; for example, I've placed it to /usr/local/bin)  
 ![alt text](https://pp.userapi.com/c841536/v841536677/37165/HhL-1GMUAxg.jpg)
