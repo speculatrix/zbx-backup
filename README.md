@@ -9,7 +9,7 @@ Current stable verson:
 - Database backup with mysqldump or Percona Xtrabackup;  
 - Exclude database tables (mysqldump only);  
 - Add some catalogs to the backup files (hardcoded);  
-- Write logile;  
+- Write logfile;  
 - Old copies rotation;  
 - Final result compression with couple of utilities;  
 - Autocompletion script for bash-completion;  
