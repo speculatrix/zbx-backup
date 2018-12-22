@@ -27,12 +27,13 @@ Usage:
 -t|--temp-folder	- temp folder where will be placed database dump (default: /tmp)
 -c|--compress-with	- compression utility to use with tar: gzip|bzip2|lbzip2|pbzip2|xz
 -r|--rotation		- set copies count what we will save (default: 10, set 'no' if rotation needn't)
+-h|--db-host		- database host name to connect
 -u|--db-user		- username for connection to zabbix database (must be 'root' for xtrabackup)
 -p|--db-password	- password for database user; also can be path to file with password or '-' for prompt
 -d|--db-name		- database name (default: 'zabbix')
 -e|--exclude-tables	- list of database tables to exclude from backup (has two presets: 'data' and 'config')
--h|--help		- print this help message
--v|--version		- print version number
+--version		- print version number and exit
+--help			- print this help message
 --db-only		- backing up database only without Zabbix config and script files
 --debug			- print result information and exit
 --force			- force run, if has any warnings that can be skipped
@@ -99,6 +100,10 @@ do
 			if [[ $DEST =~ /$ ]]; then DEST=${DEST%?}; LOGFILE="$DEST/zbx_backup.log"; fi
 			shift 2
 			;;
+		"-h"|"--db-host")
+			DB_HOST=$2
+			shift 2
+			;;
 		"-u"|"--db-user")
 			DB_USER=$2
 			shift 2
@@ -132,10 +137,10 @@ do
 			ROTATION=$2
 			shift 2
 			;;
-		"-h"|"--help")
+		"--help")
 			PrintHelpMessage
 			;;
-		"-v"|"--version")
+		"--version")
 			echo "$VERSION"
 			exit 0
 			;;
@@ -161,6 +166,7 @@ done
 # Set defaults if arguments not present
 if ! [[ "$TMP" ]]; then TMP="/tmp"; fi
 if ! [[ "$DB_NAME" ]]; then DB_NAME="zabbix"; fi
+if ! [[ "$DB_HOST" ]]; then DB_HOST="localhost"; fi
 if ! [[ "$DEST" ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi
 if ! [[ "$ROTATION" ]]; then ROTATION=10; fi
 if ! [[ "$ZBX_CATALOGS" ]]; then ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix"); fi
@@ -254,7 +260,7 @@ function BackingUp() {
 			# Common mysql variables
 			MYSQL_PATH=$(command -v mysql)
 			MDUMP_PATH=$(command -v mysqldump)
-			MYSQL_AUTH="-u ${DB_USER} -p${DB_PASS} ${DB_NAME}"
+			MYSQL_AUTH="-h ${DB_HOST} -u ${DB_USER} -p${DB_PASS} ${DB_NAME}"
 			
 			DB_DUMP=$TMP/zbx_backup_db_dump_${TIMESTAMP}.sql
 			
@@ -353,6 +359,7 @@ if [[ "$DEBUG" == "YES" ]]
 then
 	function join { local IFS="$1"; shift; echo "$*"; }
 
+	printf "%-20s : %-25s\n" "Database host" "$DB_HOST"
 	printf "%-20s : %-25s\n" "Database name" "$DB_NAME"
 	printf "%-20s : %-25s\n" "Database user" "$DB_USER"
 	printf "%-20s : %-25s\n" "Database password" "$DB_PASS"
