@@ -3,7 +3,7 @@ The __zbx-backup__ is bash-script which can help you to create backup of Zabbix 
 Zabbix Share page: https://share.zabbix.com/databases/mysql/zabbix-backup-script  
 If you have any remark, you can contact me with Telegram @asand3r.  
 Current stable verson:  
-<b>0.6.1</b>  
+<b>0.6.2</b>  
 
 ## Main features
 - Database backup with mysqldump or Percona Xtrabackup;  

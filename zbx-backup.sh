@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 
 #
-# This script can help you to create backup of simple Zabbix instance.
-# It makes tar archives of config and scripts directories. Also it makes MySQL backup with
-# Percona Xtrabackup utility (xtrabackup) whitch you should install yourself.
-# After all it makes compressed archive contains all collected data using gzip, bzip2 or xz.
-# After a few tests I reccomend to use lbzip2. It makes archive faster, but almost
-# two times bigger than xz. Gzip it fine too, but as bzip2, rather slow (in my case).
+# You can use this script to make backup copy of simple Zabbix instance.
+# As result you'll get a tar archive includes database dump, config and scripts directories.
+# For database backup it uses mysqldump or Percona Xtrabackup utility (you must install it previously).
+# At least it can compress tar file with one of  popular compression utilities.
+# After a few tests I recomend to use lbzip2.
+# Have fun and check my repo on github for new versions:
+# https://github.com/asand3r/zbx-backup
 #
 
-VERSION="0.6.1"
+VERSION="0.6.2"
 
 # Current timestamp
 TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
 # These catalogs will save too
 ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
-### END Static settings ###
 
 # The function just print help message
 function PrintHelpMessage() {
@@ -24,7 +24,7 @@ zbx_backup, version: $VERSION
 (c) Khatsayuk Alexander, 2018
 Usage:
 -b|--backup-with	- utility to make DB dump: mysqldump, xtrabackup
--s|--save-to		- choose location to save result archive file (default: current directory)
+-s|--save-to		- location to save result archive file (default: current directory)
 -t|--temp-folder	- temp folder where will be placed database dump (default: /tmp)
 -c|--compress-with	- compression utility to use with tar: gzip|bzip2|lbzip2|pbzip2|xz
 -r|--rotation		- set copies count what we will save (default: 10, set 'no' if rotation needn't)
@@ -34,21 +34,21 @@ Usage:
 -e|--exclude-tables	- list of database tables to exclude from backup (has two presets: 'data' and 'config')
 -h|--help		- print this help message
 -v|--version		- print version number
---db-only		- backing up database only without Zabbix config files
+--db-only		- backing up database only without Zabbix config and script files
 --debug			- print result information and exit
 --force			- force run, if has any warnings that can be skipped
 
 Examples:
-# Making backup of Zabbix database and config files with xtrabackup. compress it with lbzip2.
-zbx_backup --compress-with lbzip2 --use-xtrabackup --db-user root --db-password P@ssw0rd
-# Making backup of Zabbix database and config files with xtrabackup. compress it with lbzip2.
-zbx_backup --compress-with gzip --use-mysqldump --db-user zabbix --db-password /root/.mysql --db-name zabbix_database
+# Making backup of Zabbix database and config files with xtrabackup, compress it with lbzip2:
+zbx_backup --compress-with lbzip2 --backup-with xtrabackup --db-user root --db-password P@ssw0rd
+# Making backup of Zabbix database and config files with mysqldump using password from file, compress it with lbzip2:
+zbx_backup --compress-with gzip --backup-with mysqldump --db-user zabbix --db-password /root/.mysql
 # Making backup of Zabbix database only and compress it with xz utility.
-zbx_backup --compress-with xz --db-only -u root -p P@ssw0rd
+zbx_backup -b mysqldump --compress-with xz --db-only -u root -p P@ssw0rd
 # Making backup of Zabbux database with all data tables exclusion:
-zbx_backup --backup-with mysqldump --db-user root --db-pass P@ssw0rd --exclude-tables data --compress-with gzip
+zbx_backup --backup-with mysqldump --db-user root --db-password P@ssw0rd --exclude-tables data --compress-with gzip
 
-More on GitHub (https://github.com/asand3r/zbx_backup)
+Repository on GitHub: https://github.com/asand3r/zbx-backup
 "
 exit 0
 }
