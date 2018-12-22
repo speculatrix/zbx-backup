@@ -5,7 +5,7 @@
 # As result you'll get a tar archive includes database dump, config and scripts directories.
 # For database backup it uses mysqldump or Percona Xtrabackup utility (you must install it previously).
 # At least it can compress tar file with one of  popular compression utilities.
-# After a few tests I recomend to use lbzip2.
+# After a few tests I recommend to use lbzip2.
 # Have fun and check my repo on github for new versions:
 # https://github.com/asand3r/zbx-backup
 #
