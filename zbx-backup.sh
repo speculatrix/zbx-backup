@@ -10,12 +10,10 @@
 # https://github.com/asand3r/zbx-backup
 #
 
-VERSION="0.6.2"
+VERSION="0.6.3"
 
 # Current timestamp
 TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
-# These catalogs will save too
-ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
 
 # The function just print help message
 function PrintHelpMessage() {
@@ -24,6 +22,7 @@ zbx_backup, version: $VERSION
 (c) Khatsayuk Alexander, 2018
 Usage:
 -b|--backup-with	- utility to make DB dump: mysqldump, xtrabackup
+-a|--add-to-backup	- add list of catalogs to backup
 -s|--save-to		- location to save result archive file (default: current directory)
 -t|--temp-folder	- temp folder where will be placed database dump (default: /tmp)
 -c|--compress-with	- compression utility to use with tar: gzip|bzip2|lbzip2|pbzip2|xz
@@ -125,6 +124,10 @@ do
 			EXCLUDE_TABLES=$2
 			shift 2
 			;;
+		"-a"|"--add-to-backup")
+			ZBX_CATALOGS=$2
+			shift 2
+			;;
 		"-r"|"--rotation")
 			ROTATION=$2
 			shift 2
@@ -160,7 +163,8 @@ if ! [[ "$TMP" ]]; then TMP="/tmp"; fi
 if ! [[ "$DB_NAME" ]]; then DB_NAME="zabbix"; fi
 if ! [[ "$DEST" ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi
 if ! [[ "$ROTATION" ]]; then ROTATION=10; fi
-if [[ "$USE_COMPRESSION" ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: Utility '$COMPRESS_WITH' not found."; exit 1; fi
+if ! [[ "$ZBX_CATALOGS" ]]; then ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix"); fi
+if [[ "$USE_COMPRESSION" ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: '$COMPRESS_WITH' utility not found."; exit 1; fi
 
 #
 # A lot of checks, trying to make this script more friendly
@@ -189,7 +193,7 @@ then
 		exit 1
 	fi
 else
-	echo "ERROR: You must provide username to connect to the database ('-u')."
+	echo "ERROR: You must provide username to connect to the database ('-u|--db-user')."
 	exit 1
 fi
 
