@@ -23,7 +23,7 @@ For more details look at project wiki page.
 Since v0.5 has been released it has many improvements and got something like user-friendly interface, so now I'm keeping follow this way.    
 Full arguments list:  
 1. __'--help'__ option, which can show you simple help message with examples  
-![alt text](https://pp.userapi.com/c840225/v840225129/74951/l1HEzwKlkww.jpg)  
+![alt text](https://pp.userapi.com/3irn9POtcMkLTpr7K9J_AEagllDau06XjwgzqQ/MknnUCS1OlA.jpg)  
 2. Added __'--version'__ and __'--debug'__ options. The first one just prints script version, and the second one prints the list with result of all settings you have set at startup and exit.  
 ![alt_text](https://pp.userapi.com/c840225/v840225129/74960/tvzw4uLiKx8.jpg)  
 3. We can use different utils for comression. I've hardcoded the most popular in my opinion - __gzip, bzip2 (lbzip2, pbzip2) and xz__. Each may be set in __'--compress-with'__ option. If you will not set it, get just 'tar' file as result.  
@@ -51,4 +51,4 @@ There is the folder 'bash_completion.d' contains 'zbx-backup.bash' file. You can
 root@server:~# . /etc/bash_completion.d/zbx-backup.bash
 ```
 After this you can find simple autocompletion with TAB (you must place executable file somewhere where $PATH will find it and should name it as 'zbx-backup'; for example, I've placed it to /usr/local/bin)  
-![alt text](https://pp.userapi.com/c841536/v841536677/37165/HhL-1GMUAxg.jpg)
+![alt text](https://pp.userapi.com/NDSPFgqf1JGdt_030CBCvrzEnWfgmzogSIEk4Q/htq86bnR_VM.jpg)
