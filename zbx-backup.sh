@@ -18,7 +18,7 @@ TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
 # The function just print help message
 function PrintHelpMessage() {
 echo "
-zbx_backup, version: $VERSION
+zbx-backup, version: $VERSION
 (c) Khatsayuk Alexander, 2018
 Usage:
 -b|--backup-with	- utility to make DB dump: mysqldump, xtrabackup
@@ -40,13 +40,13 @@ Usage:
 
 Examples:
 # Making backup of Zabbix database and config files with xtrabackup, compress it with lbzip2:
-zbx_backup --compress-with lbzip2 --backup-with xtrabackup --db-user root --db-password P@ssw0rd
+zbx-backup --compress-with lbzip2 --backup-with xtrabackup --db-user root --db-password P@ssw0rd
 # Making backup of Zabbix database and config files with mysqldump using password from file, compress it with lbzip2:
-zbx_backup --compress-with gzip --backup-with mysqldump --db-user zabbix --db-password /root/.mysql
+zbx-backup --compress-with gzip --backup-with mysqldump --db-user zabbix --db-password /root/.mysql
 # Making backup of Zabbix database only and compress it with xz utility.
-zbx_backup -b mysqldump --compress-with xz --db-only -u root -p P@ssw0rd
+zbx-backup -b mysqldump --compress-with xz --db-only -u root -p P@ssw0rd
 # Making backup of Zabbux database with all data tables exclusion:
-zbx_backup --backup-with mysqldump --db-user root --db-password P@ssw0rd --exclude-tables data --compress-with gzip
+zbx-backup --backup-with mysqldump --db-user root --db-password P@ssw0rd --exclude-tables data --compress-with gzip
 
 Repository on GitHub: https://github.com/asand3r/zbx-backup
 "
