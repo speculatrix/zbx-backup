@@ -10,7 +10,7 @@
 # https://github.com/asand3r/zbx-backup
 #
 
-VERSION="0.6.3"
+VERSION="0.7.0beta1"
 
 # Current timestamp
 TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
@@ -27,6 +27,7 @@ Usage:
 -t|--temp-folder	- temp folder where will be placed database dump (default: /tmp)
 -c|--compress-with	- compression utility to use with tar: gzip|bzip2|lbzip2|pbzip2|xz
 -r|--rotation		- set copies count what we will save (default: 10, set 'no' if rotation needn't)
+-l|--my-login-path	- use .mylogin.cnf file, created by 'mysql_config_editor' to login to MySQL (default: zabbix)
 -h|--db-host		- database host name to connect
 -u|--db-user		- username for connection to zabbix database (must be 'root' for xtrabackup)
 -p|--db-password	- password for database user; also can be path to file with password or '-' for prompt
@@ -87,6 +88,15 @@ do
 					exit 1
 					;;
 			esac
+			shift 2
+			;;
+		"-l"|"--my-login-path")
+			MY_LOGIN_PATH=$2
+			if [[ -z "$MY_LOGIN_PATH" ]]
+			then
+				echo "Syntax error: '--my-login-path' cannot be empty"
+				exit 1
+			fi
 			shift 2
 			;;
 		"-t"|"--temp-folder")
@@ -191,18 +201,27 @@ then
 fi
 
 # Check if username is provided
-if [[ "$DB_USER" ]]
+if ! [[ "$MY_LOGIN_PATH" ]]
 then
-	if [[ "$DB_USER" =~ ^[0-9]|- ]] && ! [[ "$FORCE" ]]
+	if [[ "$DB_USER" ]]
 	then
-		echo "WARNING: Username '$DB_USER' looks wrong (starts with '-' or digit). Use '--force' if it's OK."
+		if [[ "$DB_USER" =~ ^[0-9]|- ]] && ! [[ "$FORCE" ]]
+		then
+			echo "WARNING: Username '$DB_USER' looks wrong (starts with '-' or digit). Use '--force' if it's OK."
+			exit 1
+		fi
+	else
+		echo "ERROR: You must provide username to connect to the database ('-u|--db-user')."
 		exit 1
 	fi
-else
-	echo "ERROR: You must provide username to connect to the database ('-u|--db-user')."
-	exit 1
 fi
 
+# Check if -l|--my-loging-path using without -u and -p option
+if [[ "$MY_LOGIN_PATH" ]] && [[ "$DB_USER" ]] || [[ "$DB_PASS" ]]
+then
+	echo "Syntax error: you cannot use '-l|--my-login-path' option with '-u' or '-p' options"
+	exit 1
+fi
 #
 # End of checks
 #
@@ -260,8 +279,12 @@ function BackingUp() {
 			# Common mysql variables
 			MYSQL_PATH=$(command -v mysql)
 			MDUMP_PATH=$(command -v mysqldump)
-			MYSQL_AUTH="-h ${DB_HOST} -u ${DB_USER} -p${DB_PASS} ${DB_NAME}"
-			
+			if ! [[ "$MY_LOGIN_PATH" ]]
+			then
+				MYSQL_AUTH="-h ${DB_HOST} -u ${DB_USER} -p${DB_PASS} ${DB_NAME}"
+			else
+				MYSQL_AUTH="--login-path=${MY_LOGIN_PATH}"
+			fi
 			DB_DUMP=$TMP/zbx_backup_db_dump_${TIMESTAMP}.sql
 			
 			# Dumping DB structure

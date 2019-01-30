@@ -12,7 +12,7 @@ zbx_backup_autocomplete() {
 	COMPREPLY=()
 	CUR="${COMP_WORDS[COMP_CWORD]}"
 	PREV="${COMP_WORDS[COMP_CWORD-1]}"
-	MAIN_OPTS="--help --version --save-to --backup-with --temp-folder --compress-with --rotation --use-xtrabackup --use-mysqldump --db-only --db-user --db-password --db-name --debug"
+	MAIN_OPTS="--help --version --save-to --backup-with --temp-folder --compress-with --rotation --use-xtrabackup --use-mysqldump --db-only --db-user --db-password --db-name --debug --add-to-backup"
 	COMPRESS_UTILS="gzip bzip2 lbzip2 pbzip2 xz"
 	BACKUP_UTILS="mysqldump xtrabackup"
 	if [[ ${CUR} == -* ]]

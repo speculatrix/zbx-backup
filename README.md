@@ -1,9 +1,9 @@
 # zbx-backup
 The __zbx-backup__ is bash-script which can help you to create backup of Zabbix Server instance.  
 Zabbix Share page: https://share.zabbix.com/databases/mysql/zabbix-backup-script  
-If you have any remark, you can contact me with Telegram @asand3r.  
+If you have any remark, you can contact me with Telegram: @asand3r.  
 Current stable verson:  
-<b>0.6.3</b>  
+<b>0.7.0</b>  
 
 ## Main features
 - Database backup with mysqldump or Percona Xtrabackup;  
@@ -20,14 +20,13 @@ Current stable verson:
 
 ## Usage of current stable
 For more details look at project wiki page.  
-Since v0.5 has been released it has many improvements and got something like user-friendly interface, so now I'm keeping follow this way.    
 Full arguments list:  
 1. __'--help'__ option, which can show you simple help message with examples  
 ![alt text](https://pp.userapi.com/3irn9POtcMkLTpr7K9J_AEagllDau06XjwgzqQ/MknnUCS1OlA.jpg)  
 2. Added __'--version'__ and __'--debug'__ options. The first one just prints script version, and the second one prints the list with result of all settings you have set at startup and exit.  
 ![alt_text](https://pp.userapi.com/c840225/v840225129/74960/tvzw4uLiKx8.jpg)  
 3. We can use different utils for comression. I've hardcoded the most popular in my opinion - __gzip, bzip2 (lbzip2, pbzip2) and xz__. Each may be set in __'--compress-with'__ option. If you will not set it, get just 'tar' file as result.  
-4. Option __'--db-only'__ can be used to save database only, without directories hardcoded in "ZBX_CATALOGS" variable.  
+4. Option __'--db-only'__ can be used to save database only.  
 5. Added __'--rotation'__ option. It can be used to redefine default old copies count. It has default value: 10. Also, you can set it to __'no'__ to disable rotation.  
 6. Next three options set your connection to MySQL database, it's __'--db-name'__, __'--db-user'__ and __'--db-password'__. I don't think that they need to be explained. One thing - '--db-name' has default value: __'zabbix'__, so may be skipped.
 8. Option __'-b|--backup-with'__ should be used to set backup utility - mysqldump or xtrabackup.  
@@ -38,6 +37,7 @@ Full arguments list:
 "^(history|acknowledges|alerts|auditlog|events|trends)"
 ```
 Except two presets you can set tables list manually, just enter their names to one string in double quotes after '--exclude-tables' option.  
+12. Option __'-a|--add-to-backup'__ allow you two include additional files to final archive (default: '/usr/lib/zabbix', '/etc/zabbix').  
 
 Each argument has short version of itself, you can find notice it in '--help'. So, most short usage example can looks like that:  
 ```bash
