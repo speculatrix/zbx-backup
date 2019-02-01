@@ -179,7 +179,17 @@ if ! [[ "$DB_NAME" ]]; then DB_NAME="zabbix"; fi
 if ! [[ "$DB_HOST" ]]; then DB_HOST="localhost"; fi
 if ! [[ "$DEST" ]]; then DEST=$(pwd); LOGFILE="$DEST/zbx_backup.log"; fi
 if ! [[ "$ROTATION" ]]; then ROTATION=10; fi
-if ! [[ "$ZBX_CATALOGS" ]]; then ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix"); fi
+if ! [[ "$ZBX_CATALOGS" ]] && [[ -f "/etc/os-release" ]]
+then
+	OS="$(grep -P '^ID_LIKE="\w.+"' /etc/os-release)"
+	case "$OS" in
+		"*rhel*"|"*debian*"|"*suse*")
+			ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
+		*)
+			echo "Unknown OS, cannot determine catalogs to backup. Choose it manually with '-a' option."
+			ZBX_CATALOGS=("")
+	esac
+fi
 if [[ "$USE_COMPRESSION" ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: '$COMPRESS_WITH' utility not found."; exit 1; fi
 
 #
