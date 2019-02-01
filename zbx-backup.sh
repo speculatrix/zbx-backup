@@ -305,18 +305,10 @@ function BackingUp() {
 			then
 				case "$EXCLUDE_TABLES" in
 					"data")
-						ZBX_DATA_TABLES=($($MYSQL_PATH ${MYSQL_AUTH} --batch --disable-column-names -e "SHOW TABLES;" | grep -P "$ZBX_TABLES_FILTER"))
-						for TABLE in "${ZBX_DATA_TABLES[@]}"
-						do
-							IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
-						done
+						RESULT_TABLES=($($MYSQL_PATH ${MYSQL_AUTH} --batch --disable-column-names -e "SHOW TABLES;" | grep -P "$ZBX_TABLES_FILTER"))
 						;;
 					"config")
-						ZBX_CFG_TABLES=($($MYSQL_PATH ${MYSQL_AUTH} --batch --disable-column-names -e "SHOW TABLES;" | grep -vP "$ZBX_TABLES_FILTER"))
-						for TABLE in "${ZBX_CFG_TABLES[@]}"
-						do
-							IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
-						done
+						RESULT_TABLES=($($MYSQL_PATH ${MYSQL_AUTH} --batch --disable-column-names -e "SHOW TABLES;" | grep -vP "$ZBX_TABLES_FILTER"))
 						;;
 					*)
 						for TABLE in ${EXCLUDE_TABLES}
@@ -325,6 +317,10 @@ function BackingUp() {
 						done
 						;;
 				esac
+				for TABLE in "${RESULT_TABLES[@]}"
+				do
+					IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
+				done
 				# Writing data with exclusions to dump
 				$MDUMP_PATH ${MYSQL_AUTH} --single-transaction --no-create-info ${IGNORE_ARGS%?} >> "$DB_DUMP"
 			else
