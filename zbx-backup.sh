@@ -311,7 +311,7 @@ function BackingUp() {
 						RESULT_TABLES=($($MYSQL_PATH ${MYSQL_AUTH} --batch --disable-column-names -e "SHOW TABLES;" | grep -vP "$ZBX_TABLES_FILTER"))
 						;;
 					*)
-						for TABLE in ${EXCLUDE_TABLES}
+						for TABLE in "${EXCLUDE_TABLES[@]}"
 						do
 							IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
 						done
