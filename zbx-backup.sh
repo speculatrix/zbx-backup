@@ -243,9 +243,24 @@ function TmpClean() {
 		rm -rf $TMP/zbx_backup_* 2>>"$LOGFILE"
 		return 0
 	else
-		echo "WARNING: $TIMESTAMP : '$TMP' directory not found." | tee -a "$LOGFILE"
+		echo "WARNING: $TIMESTAMP : Cannot clean '$TMP'. Directory not found." | tee -a "$LOGFILE"
 		return 1
 	fi
+}
+# The function creates tar file with data files
+function BackingUpFiles() {
+	FILES=("$@")
+	tar cf "$ZBX_FILES_TAR" -T /dev/null
+	if [[ $? -eq 2 ]]
+	then
+		echo "ERROR: Cannot create init tar archive '$ZBX_FILES_TAR'"
+		exit 1
+	fi
+
+	for (( i=1; i < ${#FILES[@]}; i++ ))
+	do
+		tar -rf "$ZBX_FILES_TAR" "${FILES[$i]}"
+	done
 }
 
 # The function makes all backup operations
@@ -255,28 +270,7 @@ function BackingUp() {
 	# If '--db-only' option not set backing up some catalogs
 	if ! [[ "$DB_ONLY" ]]
 	then
-		# Result TAR file with configs
-		ZBX_FILES_TAR=$TMP/zbx_backup_files_${TIMESTAMP}.tar
-		if [[ -d ${ZBX_CATALOGS[0]} ]]
-		then
-			# Making initial files tar archive
-			tar cf "$ZBX_FILES_TAR" "${ZBX_CATALOGS[0]}" 2>/dev/null
-			# Exit if tar fails
-			if [[ $? -eq 2 ]]; then echo "ERROR: You have no permission to save '${ZBX_CATALOGS[0]}'"; exit 1; fi
-			# Add other catalogs to archive
-			for (( i=1; i < ${#ZBX_CATALOGS[@]}; i++ ))
-			do
-				if [[ -d ${ZBX_CATALOGS[$i]} ]]
-				then
-					tar -rf "$ZBX_FILES_TAR" "${ZBX_CATALOGS[$i]}" 2>/dev/null
-					if [[ $? -eq 2 ]]; then echo "ERROR: Cannot add '${ZBX_CATALOGS[$i]}' to the archive."; exit 1; fi
-				else
-					echo "WARNING: $TIMESTAMP : Cannot find '${ZBX_CATALOGS[$i]}' to save it." >> "$LOGFILE"
-				fi
-			done
-		else
-			echo "ERROR: Cannot create TAR archive '$ZBX_FILES_TAR'." | tee -a "$LOGFILE"
-		fi
+		BackingUpFiles ${ZBX_CATALOGS[@]}
 	fi
 	
 	# Filter to grep Zabbix table. Uses to form data and config tables arrays.
