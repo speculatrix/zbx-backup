@@ -283,7 +283,7 @@ function BackingUp() {
 			then
 				MYSQL_AUTH="-h ${DB_HOST} -u ${DB_USER} -p${DB_PASS} ${DB_NAME}"
 			else
-				MYSQL_AUTH="--login-path=${MY_LOGIN_PATH}"
+				MYSQL_AUTH="--login-path=${MY_LOGIN_PATH} ${DB_NAME}"
 			fi
 			DB_DUMP=$TMP/zbx_backup_db_dump_${TIMESTAMP}.sql
 			
