@@ -185,9 +185,11 @@ then
 	case "$OS" in
 		"*rhel*"|"*debian*"|"*suse*")
 			ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
+			;;
 		*)
 			echo "Unknown OS, cannot determine catalogs to backup. Choose it manually with '-a' option."
 			ZBX_CATALOGS=("")
+			;;
 	esac
 fi
 if [[ "$USE_COMPRESSION" ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: '$COMPRESS_WITH' utility not found."; exit 1; fi
@@ -227,7 +229,7 @@ then
 fi
 
 # Check if -l|--my-loging-path using without -u and -p option
-if [[ "$MY_LOGIN_PATH" ]] && [[ "$DB_USER" ]] || [[ "$DB_PASS" ]]
+if [[ "$MY_LOGIN_PATH" ]] && ( [[ "$DB_USER" ]] || [[ "$DB_PASS" ]] )
 then
 	echo "Syntax error: you cannot use '-l|--my-login-path' option with '-u' or '-p' options"
 	exit 1
