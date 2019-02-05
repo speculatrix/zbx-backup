@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 #
-# You can use this script to make backup copy of simple Zabbix instance.
-# As result you'll get a tar archive includes database dump, config and scripts directories.
-# For database backup it uses mysqldump or Percona Xtrabackup utility (you must install it previously).
-# At least it can compress tar file with one of  popular compression utilities.
-# After a few tests I recommend to use lbzip2.
+# You can use this script to make backup copy of a simple Zabbix instance with MySQL database backend.
+# As result you'll get a tar archive with Zabbix database dump, config and scripts directories or
+# any other directories and files that you may need to include.
+# For database backup script uses mysqldump or Percona Xtrabackup utilities (you must install last one).
+# Result can be compressed with set of utilities (gzip, bzip2, xz etc).
 # Have fun and check my repo on github for new versions:
 # https://github.com/asand3r/zbx-backup
 #
@@ -187,7 +187,7 @@ then
 			ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
 			;;
 		*)
-			echo "Unknown OS, cannot determine catalogs to backup. Choose it manually with '-a' option."
+			echo "WARNING: Unknown OS ("$OS"), cannot determine catalogs to backup. Choose it manually with '-a' option."
 			ZBX_CATALOGS=("")
 			;;
 	esac
@@ -223,7 +223,7 @@ then
 			exit 1
 		fi
 	else
-		echo "ERROR: You must provide username to connect to the database ('-u|--db-user')."
+		echo "ERROR: You must provide credentials to connect to the database ('-u|--db-user' and '-p|--db-password' or '-l|--my-login-path')."
 		exit 1
 	fi
 fi
@@ -249,6 +249,7 @@ function TmpClean() {
 		return 1
 	fi
 }
+
 # The function creates tar file with data files
 function BackingUpFiles() {
 	FILES=("$@")
@@ -265,20 +266,11 @@ function BackingUpFiles() {
 	done
 }
 
-# The function makes all backup operations
-function BackingUp() {
-	# Cleaning TMP
-	TmpClean
-	# If '--db-only' option not set backing up some catalogs
-	if ! [[ "$DB_ONLY" ]]
-	then
-		BackingUpFiles ${ZBX_CATALOGS[@]}
-	fi
-	
+function BackingUpDatabase() {
+
 	# Filter to grep Zabbix table. Uses to form data and config tables arrays.
 	ZBX_TABLES_FILTER="^(history|acknowledges|alerts|auditlog|events|trends)"
-	
-	# Backing up database
+
 	case "$B_UTIL" in
 		# Using mysqldump
 		"mysqldump")
@@ -324,10 +316,10 @@ function BackingUp() {
 					IGNORE_ARGS+="--ignore-table=${DB_NAME}.${TABLE} "
 				done
 				# Writing data with exclusions to dump
-				$MDUMP_PATH ${MYSQL_AUTH} --single-transaction --no-create-info ${IGNORE_ARGS%?} >> "$DB_DUMP"
+				$MDUMP_PATH ${MYSQL_AUTH} --single-transaction --no-create-info --quick ${IGNORE_ARGS%?} >> "$DB_DUMP"
 			else
 				# Writing full data to dump
-				$MDUMP_PATH ${MYSQL_AUTH} --single-transaction >> "$DB_DUMP"
+				$MDUMP_PATH ${MYSQL_AUTH} --single-transaction --quick >> "$DB_DUMP"
 			fi
 			;;
 		# Using xtrabackup
@@ -351,10 +343,25 @@ function BackingUp() {
 			fi
 			;;
 		*)
-			echo "ERROR: You've setted incorrect backup utility. Use '--help'."
+			echo "ERROR: You've setted incorrect backup utility - $B_UTIL. Use '--help' to look at help message."
 			return 1
 			;;
 	esac
+}
+
+# The function makes all backup operations
+function BackingUp() {
+	# Cleaning TMP
+	TmpClean
+
+	# If '--db-only' option not set backing up some catalogs
+	if ! [[ "$DB_ONLY" ]]
+	then
+		BackingUpFiles ${ZBX_CATALOGS[@]}
+	fi
+
+	# Backing up database anyway
+	BackingUpDatabase
 }
 
 
@@ -386,10 +393,20 @@ then
 
 	printf "%-20s : %-25s\n" "Database host" "$DB_HOST"
 	printf "%-20s : %-25s\n" "Database name" "$DB_NAME"
-	printf "%-20s : %-25s\n" "Database user" "$DB_USER"
-	printf "%-20s : %-25s\n" "Database password" "$DB_PASS"
-	printf "%-20s : %-25s\n" "Use compression" "$USE_COMPRESSION"
-	printf "%-20s : %-25s\n" "Compression utility" "$COMPRESS_WITH"
+	if ! [[ "$MY_LOGIN_PATH" ]]
+	then
+		printf "%-20s : %-25s\n" "Database user" "$DB_USER"
+		printf "%-20s : %-25s\n" "Database password" "$DB_PASS"
+	else
+		printf "%-20s : %-25s\n" "MySQL login path" "$MY_LOGIN_PATH"
+	fi
+	if [[ "$USE_COMPRESSION" ]]
+	then
+		printf "%-20s : %-25s\n" "Use compression" "$USE_COMPRESSION"
+		printf "%-20s : %-25s\n" "Compression utility" "$COMPRESS_WITH"
+	else
+		printf "%-20s : %-25s\n" "Use compression" "No"
+	fi
 	printf "%-20s : %-25s\n" "Old copies count" "$ROTATION"
 	printf "%-20s : %-25s\n" "Logfile location" "$LOGFILE"
 	printf "%-20s : %-25s\n" "Temp directory" "$TMP"
@@ -401,11 +418,13 @@ then
 fi
 
 # Running backup function
-if ! BackingUp
+BackingUp
+
+if [[ $? -ne 0 ]]
 then
-		echo "ERROR: $TIMESTAMP : Cannot create database backup" | tee -a "$LOGFILE"
-		TmpClean
-		exit 1
+	TmpClean
+	echo "ERROR: $TIMESTAMP : Cannot create backup. BackingUp() function failed." | tee -a "$LOGFILE"
+	exit 1
 fi
 
 # Compressing of packing to tar if resulted files exists
@@ -448,7 +467,7 @@ TmpClean
 # Running rotation if needed
 if ! [[ "$ROTATION" =~ ^[Nn][Oo]$ ]]; then RotateOldCopies; fi
 
-# Cheking and logging results
+# Cheking results
 if [[ -f "$FULL_ARC" ]]
 then
 	FULL_SIZE=$(du -sh "$FULL_ARC" | cut -f1)
