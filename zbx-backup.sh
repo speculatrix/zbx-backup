@@ -83,8 +83,11 @@ do
 				"xtra"|"xtrabackup")
 					B_UTIL="xtrabackup"
 					;;
+				"pgdump"|"pg_dump")
+					B_UTIL="pg_dump"
+					;;
 				*)
-					echo "Syntax error: [-b|--backup-with] mdump|mysqldump|xtra|xtrabackup"
+					echo "Syntax error: [-b|--backup-with] mysqldump|xtrabackup|pg_dump"
 					exit 1
 					;;
 			esac
@@ -167,7 +170,7 @@ do
 			shift
 			;;
 		*)
-			echo "Syntax error! Please, use '--help' to view usage examples."
+			echo "Syntax error: Please, use '--help' to view usage examples."
 			exit 1
 			;;
 	esac
@@ -187,19 +190,22 @@ then
 			ZBX_CATALOGS=("/usr/lib/zabbix" "/etc/zabbix")
 			;;
 		*)
-			echo "WARNING: Unknown OS ("$OS"), cannot determine catalogs to backup. Choose it manually with '-a' option."
+			OS="$(grep -P '^ID="?\w.+"?' /etc/os-release)"
+			echo -e  "WARNING: Unknown OS ("$OS"), cannot determine catalogs to backup. Choose it manually with '-a' option.\n"
 			ZBX_CATALOGS=("")
 			;;
 	esac
 fi
-if [[ "$USE_COMPRESSION" ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: '$COMPRESS_WITH' utility not found."; exit 1; fi
 
 #
 # A lot of checks, trying to make this script more friendly
 #
 
+# Compression utility
+if [[ "$USE_COMPRESSION" ]] && ! [[ $(command -v "$COMPRESS_WITH") ]]; then echo "ERROR: '$COMPRESS_WITH' utility not found."; exit 1; fi
+
 # Check '-b' option is provided
-if ! [[ "$B_UTIL"  ]]; then echo "ERROR: You must provide backup utility ('-b')."; exit 1; fi
+if ! [[ "$B_UTIL"  ]]; then echo "Syntax error: You must provide backup utility ('-b')."; exit 1; fi
 
 # Checking TMP and DST directories existing
 if ! [[ -d "$TMP" ]]; then if ! mkdir -p $TMP; then echo "ERROR: Cannot create temp directory ($TMP)."; exit 1; fi; fi
@@ -231,7 +237,14 @@ fi
 # Check if -l|--my-loging-path using without -u and -p option
 if [[ "$MY_LOGIN_PATH" ]] && ( [[ "$DB_USER" ]] || [[ "$DB_PASS" ]] )
 then
-	echo "Syntax error: you cannot use '-l|--my-login-path' option with '-u' or '-p' options"
+	echo "Syntax error: You cannot use '-l|--my-login-path' option with '-u' or '-p' options."
+	exit 1
+fi
+
+# Check if pg_dump using with -l|--my-login-path
+if [[ "$MY_LOGIN_PATH" ]] && [[ "$B_UTIL" =~ ^pg ]]
+then
+	echo "Syntax error: You cannot use '-l|--my-login-path' with 'pg_dump' utility."
 	exit 1
 fi
 #
