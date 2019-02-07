@@ -6,9 +6,9 @@ Current stable verson:
 <b>0.7.0</b>  
 
 ## Main features
-- Database backup with mysqldump or Percona Xtrabackup;  
+- Database backup with mysqldump, Percona Xtrabackup or pg_dump;  
 - Exclude database tables (mysqldump only);  
-- Add various catalogs to the backup;  
+- Add various catalogs and files to result archive;  
 - Write logfile;  
 - Old copies rotation;  
 - Final result compression with couple of utilities;  

@@ -21,7 +21,7 @@ echo "
 zbx-backup, version: $VERSION
 (c) Khatsayuk Alexander, 2018
 Usage:
--b|--backup-with	- utility to make DB dump: mysqldump, xtrabackup
+-b|--backup-with	- utility to make DB dump: mysqldump, xtrabackup, pg_dump
 -a|--add-to-backup	- add list of catalogs to backup
 -s|--save-to		- location to save result archive file (default: current directory)
 -t|--temp-folder	- temp folder where will be placed database dump (default: /tmp)
