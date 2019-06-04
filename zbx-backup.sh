@@ -12,8 +12,8 @@
 
 VERSION="0.6.3"
 
-# Current timestamp
-TIMESTAMP=$(date +%d.%m.%Y.%H%M%S)
+# Current timestamp - modified by PaulM to be ISO9660-like
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 
 # The function just print help message
 function PrintHelpMessage() {
